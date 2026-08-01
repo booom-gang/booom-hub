@@ -7,7 +7,7 @@ import ThemeToggle from '../components/ThemeToggle.jsx';
 import { Sparkles } from '../components/Decorations.jsx';
 import { uploadProfilePicture } from '../services/uploadService.js';
 import mediaService from '../services/mediaService.js';
-import { MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, MAX_ABOUT_LENGTH } from '../utils/constants.js';
+import { MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, MAX_ABOUT_LENGTH, getR2Url } from '../utils/constants.js';
 
 const sidebarItems = [
   { icon: User, label: 'Edit Profile' },
@@ -61,8 +61,9 @@ const SettingsPage = () => {
     } catch (err) { setError(err.response?.data?.error || 'Failed'); } finally { setSaving(false); }
   };
 
-  const avatarUrl = user?.profile_picture
-    ? `https://wsrv.nl/?url=${encodeURIComponent(user.profile_picture)}&w=256&output=webp&q=80`
+  const rawUrl = getR2Url(user?.profile_picture);
+  const avatarUrl = rawUrl
+    ? `https://wsrv.nl/?url=${encodeURIComponent(rawUrl)}&w=256&output=webp&q=80`
     : null;
 
   return (

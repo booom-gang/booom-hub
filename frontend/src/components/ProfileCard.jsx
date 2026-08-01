@@ -1,12 +1,14 @@
 import { motion } from 'framer-motion';
 import { HeartIcon, Sparkles } from './Decorations.jsx';
 import { formatDate } from '../utils/formatDate.js';
+import { getR2Url } from '../utils/constants.js';
 import { useState } from 'react';
 
 const ProfileCard = ({ user }) => {
   const [liked, setLiked] = useState(false);
-  const avatarUrl = user.profile_picture
-    ? `https://wsrv.nl/?url=${encodeURIComponent(user.profile_picture)}&w=512&output=webp&q=80`
+  const rawUrl = getR2Url(user.profile_picture);
+  const avatarUrl = rawUrl
+    ? `https://wsrv.nl/?url=${encodeURIComponent(rawUrl)}&w=512&output=webp&q=80`
     : null;
 
   return (

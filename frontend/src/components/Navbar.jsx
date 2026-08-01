@@ -3,6 +3,7 @@ import { Home, Image, MessageCircle, Calendar, Settings, LogOut } from 'lucide-r
 import { motion } from 'framer-motion';
 import ThemeToggle from './ThemeToggle.jsx';
 import useAuth from '../hooks/useAuth.js';
+import { getR2Url } from '../utils/constants.js';
 
 const navLinks = [
   { to: '/', icon: Home, label: 'Home' },
@@ -71,7 +72,7 @@ const Navbar = () => {
           >
             {user?.profile_picture ? (
               <img
-                src={`https://wsrv.nl/?url=${encodeURIComponent(user.profile_picture)}&w=80&output=webp&q=80`}
+                src={`https://wsrv.nl/?url=${encodeURIComponent(getR2Url(user.profile_picture))}&w=80&output=webp&q=80`}
                 alt=""
                 className="w-full h-full object-cover"
               />

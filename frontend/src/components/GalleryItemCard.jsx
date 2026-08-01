@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Play, Trash2 } from 'lucide-react';
+import { Play, Trash2, Download } from 'lucide-react';
 import { formatRelativeTime } from '../utils/formatDate.js';
 import useAuth from '../hooks/useAuth.js';
 
@@ -10,6 +10,22 @@ const GalleryItemCard = ({ item, onDelete, onPreview, index }) => {
   const isVideo = item.media_type === 'video';
   const thumbnailUrl = isVideo ? (item.thumbnail_proxy_url || item.proxy_url) : item.proxy_url;
   const isOwner = item.user_id?._id === user?._id || item.user_id === user?._id;
+
+  const handleDownload = async (e) => {
+    e.stopPropagation();
+    const url = item.proxy_url || item.file_key;
+    const ext = isVideo ? 'mp4' : 'jpg';
+    const name = `booom-${item.user_id?.username || 'media'}-${Date.now()}.${ext}`;
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = name;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } catch { window.open(url, '_blank'); }
+  };
 
   return (
     <motion.div
@@ -40,7 +56,16 @@ const GalleryItemCard = ({ item, onDelete, onPreview, index }) => {
         className="absolute inset-0 flex flex-col justify-between p-3 pointer-events-none"
         style={{ background: 'linear-gradient(transparent 40%, rgba(0,0,0,0.7))' }}
       >
-        <div className="flex justify-end pointer-events-auto">
+        <div className="flex justify-end gap-1.5 pointer-events-auto">
+          <motion.button
+            onClick={handleDownload}
+            className="w-7 h-7 rounded-full flex items-center justify-center bg-black/30 hover:bg-black/50 transition-colors"
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            title="Download"
+          >
+            <Download size={12} color="white" />
+          </motion.button>
           {isOwner && (
             <motion.button
               onClick={(e) => { e.stopPropagation(); onDelete(item._id); }}

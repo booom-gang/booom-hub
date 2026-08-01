@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, X, ChevronLeft, ChevronRight, Play, Pause, Music } from 'lucide-react';
+import { Upload, X, ChevronLeft, ChevronRight, Play, Pause, Music, Download } from 'lucide-react';
 import GalleryGrid from '../components/GalleryGrid.jsx';
 import ConfirmModal from '../components/ConfirmModal.jsx';
 import { StarDoodle, Sparkles } from '../components/Decorations.jsx';
@@ -106,6 +106,22 @@ const GalleryPage = () => {
 
   const currentItem = filteredItems[slideshowIndex];
 
+  const handleSlideshowDownload = async () => {
+    if (!currentItem) return;
+    const url = currentItem.proxy_url || currentItem.file_key;
+    const ext = currentItem.media_type === 'video' ? 'mp4' : 'jpg';
+    const name = `booom-${currentItem.user_id?.username || 'media'}-${Date.now()}.${ext}`;
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = name;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } catch { window.open(url, '_blank'); }
+  };
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-6 relative">
       <StarDoodle className="absolute top-2 right-8" size={20} />
@@ -206,6 +222,9 @@ const GalleryPage = () => {
             </div>
 
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4">
+              <button onClick={handleSlideshowDownload} className="w-10 h-10 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/20 transition-colors" title="Download">
+                <Download size={16} color="white" />
+              </button>
               <button onClick={() => setSlideshowPaused((p) => !p)} className="w-10 h-10 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/20 transition-colors">
                 {slideshowPaused ? <Play size={16} fill="white" color="white" /> : <Pause size={16} color="white" />}
               </button>

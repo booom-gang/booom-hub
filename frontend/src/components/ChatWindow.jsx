@@ -57,6 +57,28 @@ const ChatWindow = () => {
     return unsub;
   }, [onMessage, scrollToBottom]);
 
+  useEffect(() => {
+    if (!socket?.connected) {
+      const poll = setInterval(async () => {
+        try {
+          const data = await messageService.getMessages();
+          if (data.length > 0) {
+            setMessages((prev) => {
+              const ids = new Set(prev.map(m => m._id));
+              const newMsgs = data.filter(m => !ids.has(m._id));
+              if (newMsgs.length === 0) return prev;
+              const merged = [...prev, ...newMsgs].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+              if (isAtBottomRef.current) setTimeout(() => scrollToBottom(), 50);
+              else setShowNewPill(true);
+              return merged;
+            });
+          }
+        } catch {}
+      }, 3000);
+      return () => clearInterval(poll);
+    }
+  }, [socket?.connected, scrollToBottom]);
+
   const loadOlder = async () => {
     if (!hasMore || loading) return;
     try {

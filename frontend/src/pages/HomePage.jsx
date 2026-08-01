@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { MessageCircle, Image, Download } from 'lucide-react';
+import { MessageCircle, Image, Download, Check } from 'lucide-react';
 import CardDeck from '../components/CardDeck.jsx';
 import { StarDoodle, Squiggle, CuteMascot } from '../components/Decorations.jsx';
 import useAuth from '../hooks/useAuth.js';
@@ -12,6 +12,7 @@ const HomePage = () => {
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -57,6 +58,12 @@ const HomePage = () => {
             animate={{ rotate: 360 }}
             transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
           />
+        ) : users.length === 0 ? (
+          <div className="text-center py-10">
+            <p className="text-3xl mb-2">👋</p>
+            <p className="text-sm font-medium mb-1" style={{ color: 'var(--text-primary)' }}>welcome to BOOOM‼️</p>
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>you're the first one here!</p>
+          </div>
         ) : (
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -93,23 +100,26 @@ const HomePage = () => {
         </div>
         <div className="flex justify-center mt-3">
           <motion.button
-            onClick={() => {
-              const a = document.createElement('a');
-              a.href = window.location.href;
-              a.setAttribute('download', 'BOOOM');
-              if (navigator.share) {
-                navigator.share({ title: 'BOOOM‼️', url: window.location.href }).catch(() => {});
-              } else {
-                navigator.clipboard.writeText(window.location.href);
+            onClick={async () => {
+              const url = window.location.origin + '/booom-hub/';
+              try {
+                await navigator.clipboard.writeText(url);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+              } catch {
+                const a = document.createElement('a');
+                a.href = url;
+                a.target = '_blank';
+                a.click();
               }
             }}
             className="flex items-center gap-1.5 text-[11px] py-1.5 px-3 rounded-full font-medium"
-            style={{ color: 'var(--text-muted)', border: '1px solid var(--border-color)' }}
+            style={{ color: copied ? 'var(--success)' : 'var(--text-muted)', border: '1px solid var(--border-color)' }}
             whileHover={{ scale: 1.05, color: 'var(--accent)' }}
             whileTap={{ scale: 0.95 }}
           >
-            <Download size={12} />
-            Share App
+            {copied ? <Check size={12} /> : <Download size={12} />}
+            {copied ? 'Link copied!' : 'Save to phone'}
           </motion.button>
         </div>
       </div>

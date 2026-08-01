@@ -26,7 +26,7 @@ const ProfileCard = ({ user }) => {
 
   return (
     <motion.div
-      className="w-full max-w-[340px] mx-auto rounded-[2rem] overflow-hidden relative"
+      className="w-full max-w-[400px] mx-auto rounded-[2rem] overflow-hidden relative"
       style={{
         backgroundColor: '#1a1208',
         border: '2px solid var(--accent)',
@@ -35,7 +35,7 @@ const ProfileCard = ({ user }) => {
       whileHover={{ y: -6, boxShadow: '0 0 40px rgba(242, 121, 43, 0.3), 0 12px 40px rgba(0,0,0,0.6)' }}
       transition={{ type: 'spring', stiffness: 300, damping: 25 }}
     >
-      <div className="relative h-72 overflow-hidden">
+      <div className="relative h-80 overflow-hidden">
         {avatarUrl ? (
           <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
         ) : (

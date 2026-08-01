@@ -48,6 +48,7 @@ export const login = async (req, res, next) => {
         username: user.username,
         profile_picture: user.profile_picture,
         about: user.about,
+        hobbies: user.hobbies,
         joined_at: user.joined_at,
       },
     });

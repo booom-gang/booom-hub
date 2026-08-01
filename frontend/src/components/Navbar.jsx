@@ -9,7 +9,7 @@ const navLinks = [
   { to: '/', icon: Home, label: 'Home' },
   { to: '/gallery', icon: Image, label: 'Gallery' },
   { to: '/chat', icon: MessageCircle, label: 'Chat' },
-  { to: '/calendar', icon: Calendar, label: 'Cal' },
+  { to: '/calendar', icon: Calendar, label: 'Calendar' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ];
 

@@ -41,7 +41,7 @@ const CardDeck = ({ users }) => {
 
   return (
     <div
-      className="relative w-full max-w-lg mx-auto"
+      className="relative w-full max-w-xl mx-auto"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >

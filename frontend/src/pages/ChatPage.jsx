@@ -12,9 +12,6 @@ const ChatPage = () => {
         <h1 className="text-lg font-bold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
           Chat <motion.span animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 2, repeat: Infinity }}>💬</motion.span>
         </h1>
-        <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: 'var(--accent-light)', color: 'var(--accent)' }}>
-          32 members
-        </span>
       </div>
 
       <ChatWindow />

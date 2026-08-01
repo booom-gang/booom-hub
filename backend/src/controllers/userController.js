@@ -24,7 +24,7 @@ export const getMe = async (req, res, next) => {
 export const updateMe = async (req, res, next) => {
   try {
     const updates = {};
-    const allowedFields = ['username', 'about', 'profile_picture'];
+    const allowedFields = ['username', 'about', 'profile_picture', 'hobbies'];
 
     for (const field of allowedFields) {
       if (req.body[field] !== undefined) {
@@ -49,6 +49,11 @@ export const updateMe = async (req, res, next) => {
             return res.status(400).json({ error: 'About text cannot exceed 300 characters' });
           }
           updates.about = trimmed;
+        } else if (field === 'hobbies') {
+          if (!Array.isArray(req.body[field])) {
+            return res.status(400).json({ error: 'Hobbies must be an array' });
+          }
+          updates.hobbies = req.body[field].slice(0, 10).map(h => String(h).trim()).filter(Boolean);
         } else {
           updates[field] = req.body[field];
         }

@@ -24,6 +24,10 @@ const userSchema = new mongoose.Schema({
     maxlength: [300, 'About text cannot exceed 300 characters'],
     default: '',
   },
+  hobbies: {
+    type: [String],
+    default: [],
+  },
   joined_at: {
     type: Date,
     default: Date.now,

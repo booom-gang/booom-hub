@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { MessageCircle, Image } from 'lucide-react';
+import { MessageCircle, Image, Download } from 'lucide-react';
 import CardDeck from '../components/CardDeck.jsx';
 import { StarDoodle, Squiggle, CuteMascot } from '../components/Decorations.jsx';
 import useAuth from '../hooks/useAuth.js';
@@ -78,7 +78,7 @@ const HomePage = () => {
             whileTap={{ scale: 0.95 }}
           >
             <Image size={15} />
-            View Profile
+            View Gallery
           </motion.button>
           <motion.button
             onClick={() => navigate('/chat')}
@@ -89,6 +89,27 @@ const HomePage = () => {
           >
             <MessageCircle size={15} />
             Message
+          </motion.button>
+        </div>
+        <div className="flex justify-center mt-3">
+          <motion.button
+            onClick={() => {
+              const a = document.createElement('a');
+              a.href = window.location.href;
+              a.setAttribute('download', 'BOOOM');
+              if (navigator.share) {
+                navigator.share({ title: 'BOOOM‼️', url: window.location.href }).catch(() => {});
+              } else {
+                navigator.clipboard.writeText(window.location.href);
+              }
+            }}
+            className="flex items-center gap-1.5 text-[11px] py-1.5 px-3 rounded-full font-medium"
+            style={{ color: 'var(--text-muted)', border: '1px solid var(--border-color)' }}
+            whileHover={{ scale: 1.05, color: 'var(--accent)' }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Download size={12} />
+            Share App
           </motion.button>
         </div>
       </div>

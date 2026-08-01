@@ -4,6 +4,7 @@ const MOCK_USERS = [
     username: 'Alex',
     profile_picture: null,
     about: 'Into hiking and photography. Always down for a road trip.',
+    hobbies: ['Hiking', 'Photography', 'Travel'],
     joined_at: '2025-01-15T10:00:00Z',
   },
   {
@@ -11,6 +12,7 @@ const MOCK_USERS = [
     username: 'Jordan',
     profile_picture: null,
     about: 'Coffee enthusiast and amateur chef.',
+    hobbies: ['Coffee', 'Cooking', 'Music'],
     joined_at: '2025-02-20T14:30:00Z',
   },
   {
@@ -18,6 +20,7 @@ const MOCK_USERS = [
     username: 'Sam',
     profile_picture: null,
     about: 'Bookworm. Currently reading way too many fantasy novels.',
+    hobbies: ['Reading', 'Art', 'Movies'],
     joined_at: '2025-03-10T09:15:00Z',
   },
   {
@@ -25,6 +28,7 @@ const MOCK_USERS = [
     username: 'Riley',
     profile_picture: null,
     about: 'Music lover. Playing guitar since I was 12.',
+    hobbies: ['Music', 'Gaming', 'Sports'],
     joined_at: '2025-04-05T16:45:00Z',
   },
   {
@@ -32,6 +36,7 @@ const MOCK_USERS = [
     username: 'Casey',
     profile_picture: null,
     about: 'Gamer and tech nerd. Ask me about mechanical keyboards.',
+    hobbies: ['Gaming', 'Coding', 'Coffee'],
     joined_at: '2025-05-01T11:00:00Z',
   },
 ];

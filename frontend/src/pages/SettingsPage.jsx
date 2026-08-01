@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
-import { motion } from 'framer-motion';
-import { Camera, LogOut, Save, Loader2, User, Shield, Bell, Palette, HelpCircle, ChevronRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Camera, LogOut, Save, Loader2, User, Palette, Palette as PaletteIcon, X, Plus } from 'lucide-react';
 import useAuth from '../hooks/useAuth.js';
 import useTheme from '../hooks/useTheme.js';
 import ThemeToggle from '../components/ThemeToggle.jsx';
@@ -9,12 +9,10 @@ import { uploadProfilePicture } from '../services/uploadService.js';
 import mediaService from '../services/mediaService.js';
 import { MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, MAX_ABOUT_LENGTH, getR2Url } from '../utils/constants.js';
 
-const sidebarItems = [
-  { icon: User, label: 'Edit Profile' },
-  { icon: Shield, label: 'Account' },
-  { icon: Bell, label: 'Notifications' },
-  { icon: Palette, label: 'Theme' },
-  { icon: HelpCircle, label: 'Help & Support' },
+const SUGGESTED_HOBBIES = [
+  'Coffee', 'Cooking', 'Travel', 'Music', 'Gaming', 'Sports',
+  'Reading', 'Art', 'Photography', 'Movies', 'Hiking', 'Yoga',
+  'Dancing', 'Swimming', 'Cycling', 'Fishing', 'Gardening', 'Coding',
 ];
 
 const SettingsPage = () => {
@@ -22,6 +20,8 @@ const SettingsPage = () => {
   const { theme } = useTheme();
   const [username, setUsername] = useState(user?.username || '');
   const [about, setAbout] = useState(user?.about || '');
+  const [hobbies, setHobbies] = useState(user?.hobbies || []);
+  const [newHobby, setNewHobby] = useState('');
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [saving, setSaving] = useState(false);
@@ -29,6 +29,11 @@ const SettingsPage = () => {
   const [success, setSuccess] = useState('');
   const [activeTab, setActiveTab] = useState('Edit Profile');
   const fileInputRef = useRef(null);
+
+  const rawUrl = getR2Url(user?.profile_picture);
+  const avatarUrl = rawUrl
+    ? `https://wsrv.nl/?url=${encodeURIComponent(rawUrl)}&w=256&output=webp&q=80`
+    : null;
 
   const handleProfilePicture = async (e) => {
     const file = e.target.files?.[0];
@@ -40,7 +45,7 @@ const SettingsPage = () => {
       const result = await uploadProfilePicture({ file, userId: user._id, onProgress: setUploadProgress });
       const updated = await mediaService.updateMe({ profile_picture: result.fileKey });
       updateUser(updated);
-      setSuccess('Updated!');
+      setSuccess('Photo updated!');
       setTimeout(() => setSuccess(''), 2000);
     } catch (err) { setError(err.response?.data?.error || 'Failed'); } finally { setUploading(false); }
   };
@@ -54,24 +59,43 @@ const SettingsPage = () => {
     if (about.length > MAX_ABOUT_LENGTH) { setError(`Max ${MAX_ABOUT_LENGTH} chars`); return; }
     setSaving(true);
     try {
-      const updated = await mediaService.updateMe({ username: username.trim(), about });
+      const updated = await mediaService.updateMe({ username: username.trim(), about, hobbies });
       updateUser(updated);
       setSuccess('Saved!');
       setTimeout(() => setSuccess(''), 2000);
     } catch (err) { setError(err.response?.data?.error || 'Failed'); } finally { setSaving(false); }
   };
 
-  const rawUrl = getR2Url(user?.profile_picture);
-  const avatarUrl = rawUrl
-    ? `https://wsrv.nl/?url=${encodeURIComponent(rawUrl)}&w=256&output=webp&q=80`
-    : null;
+  const addHobby = (hobby) => {
+    const trimmed = hobby.trim();
+    if (trimmed && !hobbies.includes(trimmed) && hobbies.length < 10) {
+      setHobbies([...hobbies, trimmed]);
+      setNewHobby('');
+    }
+  };
+
+  const removeHobby = (hobby) => {
+    setHobbies(hobbies.filter(h => h !== hobby));
+  };
+
+  const handleHobbyKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addHobby(newHobby);
+    }
+  };
+
+  const availableSuggestions = SUGGESTED_HOBBIES.filter(h => !hobbies.includes(h));
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col md:flex-row gap-6">
-        <div className="md:w-[220px] shrink-0">
+        <div className="md:w-[200px] shrink-0">
           <div className="flex md:flex-col gap-1">
-            {sidebarItems.map((item) => (
+            {[
+              { icon: User, label: 'Edit Profile' },
+              { icon: PaletteIcon, label: 'Theme' },
+            ].map((item) => (
               <button
                 key={item.label}
                 onClick={() => setActiveTab(item.label)}
@@ -80,7 +104,6 @@ const SettingsPage = () => {
               >
                 <item.icon size={16} />
                 {item.label}
-                {activeTab === item.label && <ChevronRight size={14} className="ml-auto" />}
               </button>
             ))}
 
@@ -163,6 +186,65 @@ const SettingsPage = () => {
                 </div>
 
                 <div>
+                  <label className="block text-xs font-bold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Hobbies</label>
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    <AnimatePresence>
+                      {hobbies.map((hobby) => (
+                        <motion.span
+                          key={hobby}
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.8 }}
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold"
+                          style={{ backgroundColor: 'var(--accent-light)', color: 'var(--accent)', border: '1px solid var(--accent)' }}
+                        >
+                          {hobby}
+                          <button type="button" onClick={() => removeHobby(hobby)} className="ml-0.5 hover:opacity-70">
+                            <X size={12} />
+                          </button>
+                        </motion.span>
+                      ))}
+                    </AnimatePresence>
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newHobby}
+                      onChange={(e) => setNewHobby(e.target.value)}
+                      onKeyDown={handleHobbyKeyDown}
+                      className="input-dark flex-1 text-sm"
+                      placeholder="Add a hobby..."
+                      maxLength={20}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => addHobby(newHobby)}
+                      className="px-3 rounded-2xl flex items-center justify-center"
+                      style={{ backgroundColor: 'var(--accent)', color: '#fff' }}
+                      disabled={!newHobby.trim() || hobbies.length >= 10}
+                    >
+                      <Plus size={16} />
+                    </button>
+                  </div>
+                  {hobbies.length < 5 && availableSuggestions.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {availableSuggestions.slice(0, 6).map((hobby) => (
+                        <button
+                          key={hobby}
+                          type="button"
+                          onClick={() => addHobby(hobby)}
+                          className="px-2.5 py-1 rounded-full text-[10px] font-medium transition-all hover:scale-105"
+                          style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)', border: '1px solid var(--border-color)' }}
+                        >
+                          + {hobby}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>{hobbies.length}/10 hobbies</p>
+                </div>
+
+                <div>
                   <label className="block text-xs font-bold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Joined</label>
                   <input type="text" value={user.joined_at ? new Date(user.joined_at).toLocaleDateString() : ''} className="input-dark" disabled style={{ opacity: 0.5 }} />
                 </div>
@@ -182,13 +264,6 @@ const SettingsPage = () => {
                 <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Currently: {theme}</p>
                 <ThemeToggle />
               </div>
-            </motion.div>
-          )}
-
-          {activeTab !== 'Edit Profile' && activeTab !== 'Theme' && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="card-dark text-center py-12">
-              <p className="text-3xl mb-2">🚧</p>
-              <p className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>coming soon</p>
             </motion.div>
           )}
         </div>

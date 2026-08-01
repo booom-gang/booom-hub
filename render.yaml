@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: booom-backend
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: node src/server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: 30d
+      - key: MASTER_PASSWORD_HASH
+        sync: false
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_BUCKET_NAME
+        value: boom-gallery
+      - key: R2_PUBLIC_BASE_URL
+        value: https://pub-501242c723764e14886d44043d655896.r2.dev
+      - key: CLIENT_ORIGIN
+        value: https://booom-gang.github.io

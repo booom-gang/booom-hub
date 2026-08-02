@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Play, Trash2, Download, X } from 'lucide-react';
 import { formatRelativeTime } from '../utils/formatDate.js';
+import { getR2Url } from '../utils/constants.js';
 import useAuth from '../hooks/useAuth.js';
 
 const GalleryItemCard = ({ item, onDelete, onPreview, index }) => {
@@ -14,7 +15,8 @@ const GalleryItemCard = ({ item, onDelete, onPreview, index }) => {
 
   const handleDownload = async (e) => {
     e.stopPropagation();
-    const url = item.proxy_url || item.file_key;
+    const rawKey = item.file_key;
+    const url = isVideo ? getR2Url(rawKey) : (item.proxy_url || getR2Url(rawKey));
     const ext = isVideo ? 'mp4' : 'jpg';
     const name = `booom-${item.user_id?.username || 'media'}-${Date.now()}.${ext}`;
     try {
@@ -30,7 +32,11 @@ const GalleryItemCard = ({ item, onDelete, onPreview, index }) => {
 
   const handleClick = (e) => {
     e.stopPropagation();
-    setShowActions(!showActions);
+    if (isVideo) {
+      onPreview?.('video', thumbnailUrl, index);
+    } else {
+      setShowActions(!showActions);
+    }
   };
 
   const handlePreview = (e) => {
@@ -102,26 +108,10 @@ const GalleryItemCard = ({ item, onDelete, onPreview, index }) => {
         </div>
 
         <div className="pointer-events-auto">
-          {isVideo && (
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full mb-1 inline-block" style={{ backgroundColor: 'var(--accent)', color: '#fff' }}>
-              vibes ✦
-            </span>
-          )}
           <div className="flex items-center gap-1.5">
             <span className="text-white text-xs font-semibold">{item.user_id?.username || 'Unknown'}</span>
           </div>
           <p className="text-white/50 text-[10px]">{formatRelativeTime(item.created_at)}</p>
-          {showActions && isVideo && (
-            <motion.button
-              onClick={handlePreview}
-              className="mt-2 px-3 py-1 rounded-full text-[10px] font-bold"
-              style={{ backgroundColor: 'var(--accent)', color: '#fff' }}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              Play Video
-            </motion.button>
-          )}
         </div>
       </motion.div>
     </motion.div>

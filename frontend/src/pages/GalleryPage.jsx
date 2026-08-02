@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, X, ChevronLeft, ChevronRight, Play, Pause, Music, Download } from 'lucide-react';
 import GalleryGrid from '../components/GalleryGrid.jsx';
@@ -6,23 +6,31 @@ import ConfirmModal from '../components/ConfirmModal.jsx';
 import { StarDoodle, Sparkles } from '../components/Decorations.jsx';
 import mediaService from '../services/mediaService.js';
 import { uploadFile } from '../services/uploadService.js';
-import { GALLERY_PAGE_SIZE } from '../utils/constants.js';
+import { GALLERY_PAGE_SIZE, getR2Url } from '../utils/constants.js';
 
 const FILTERS = ['All', 'Photos', 'Videos'];
+
+const activeUploads = new Map();
+const uploadListeners = new Set();
+
+const notifyUploadListeners = (uploads) => {
+  uploadListeners.forEach((fn) => fn(uploads));
+};
 
 const GalleryPage = () => {
   const [items, setItems] = useState([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploads, setUploads] = useState([]);
   const [filter, setFilter] = useState('All');
   const [slideshow, setSlideshow] = useState(false);
   const [slideshowIndex, setSlideshowIndex] = useState(0);
   const [slideshowPaused, setSlideshowPaused] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [videoViewer, setVideoViewer] = useState(null);
+  const abortControllersRef = useRef(new Map());
 
   const fetchGallery = useCallback(async (pageNum, append = false) => {
     try {
@@ -39,25 +47,65 @@ const GalleryPage = () => {
 
   useEffect(() => { fetchGallery(1); }, [fetchGallery]);
 
+  useEffect(() => {
+    const listener = (u) => setUploads([...u]);
+    uploadListeners.add(listener);
+    setUploads([...activeUploads.values()]);
+    return () => uploadListeners.delete(listener);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      abortControllersRef.current.forEach((ctrl) => ctrl.abort());
+    };
+  }, []);
+
   const handleFiles = async (files) => {
-    const file = Array.from(files)[0];
-    if (!file) return;
-    setUploading(true);
-    setUploadProgress(0);
-    try {
-      const mediaKind = file.type.startsWith('video/') ? 'gallery-video' : 'gallery-image';
-      const result = await uploadFile({ file, mediaKind, onProgress: setUploadProgress });
-      await mediaService.createGalleryItem({
-        media_type: file.type.startsWith('video/') ? 'video' : 'image',
-        file_key: result.fileKey,
-        thumbnail_key: result.thumbnailKey,
-        file_size_bytes: result.fileSizeBytes,
-      });
-      fetchGallery(1);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setUploading(false);
+    const fileArray = Array.from(files);
+    if (fileArray.length === 0) return;
+
+    for (const file of fileArray) {
+      const uploadId = `upload-${Date.now()}-${Math.random()}`;
+      const controller = new AbortController();
+      abortControllersRef.current.set(uploadId, controller);
+
+      const uploadEntry = { id: uploadId, fileName: file.name, progress: 0, status: 'uploading' };
+      activeUploads.set(uploadId, uploadEntry);
+      notifyUploadListeners(activeUploads);
+
+      (async () => {
+        try {
+          const mediaKind = file.type.startsWith('video/') ? 'gallery-video' : 'gallery-image';
+          const result = await uploadFile({
+            file, mediaKind,
+            onProgress: (p) => {
+              const e = activeUploads.get(uploadId);
+              if (e) { e.progress = p; notifyUploadListeners(activeUploads); }
+            },
+          });
+          if (!controller.signal.aborted) {
+            await mediaService.createGalleryItem({
+              media_type: file.type.startsWith('video/') ? 'video' : 'image',
+              file_key: result.fileKey,
+              thumbnail_key: result.thumbnailKey,
+              file_size_bytes: result.fileSizeBytes,
+            });
+            const e = activeUploads.get(uploadId);
+            if (e) { e.status = 'done'; e.progress = 100; notifyUploadListeners(activeUploads); }
+            fetchGallery(1);
+          }
+        } catch (err) {
+          if (err.name !== 'AbortError') {
+            console.error(err);
+            const e = activeUploads.get(uploadId);
+            if (e) { e.status = 'error'; notifyUploadListeners(activeUploads); }
+          }
+        } finally {
+          activeUploads.delete(uploadId);
+          abortControllersRef.current.delete(uploadId);
+          notifyUploadListeners(activeUploads);
+        }
+      })();
     }
   };
 
@@ -108,7 +156,8 @@ const GalleryPage = () => {
 
   const handleSlideshowDownload = async () => {
     if (!currentItem) return;
-    const url = currentItem.proxy_url || currentItem.file_key;
+    const rawKey = currentItem.file_key;
+    const url = currentItem.media_type === 'video' ? getR2Url(rawKey) : (currentItem.proxy_url || getR2Url(rawKey));
     const ext = currentItem.media_type === 'video' ? 'mp4' : 'jpg';
     const name = `booom-${currentItem.user_id?.username || 'media'}-${Date.now()}.${ext}`;
     try {
@@ -149,9 +198,9 @@ const GalleryPage = () => {
               whileTap={{ scale: 0.95 }}
             >
               <Upload size={12} />
-              {uploading ? `${uploadProgress}%` : 'Upload'}
+              {uploads.length > 0 ? `${uploads.length} uploading` : 'Upload'}
             </motion.div>
-            <input type="file" accept="image/*,video/*" onChange={(e) => handleFiles(e.target.files)} className="hidden" />
+            <input type="file" accept="image/*,video/*" multiple onChange={(e) => handleFiles(e.target.files)} className="hidden" />
           </label>
         </div>
       </div>
@@ -202,21 +251,17 @@ const GalleryPage = () => {
               {currentItem.media_type === 'image' ? (
                 <motion.img key={currentItem._id} initial={{ opacity: 0, scale: 1.03 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4 }} src={currentItem.proxy_url?.replace('w=400', 'w=1600')} alt="" className="max-w-full max-h-full object-contain rounded-xl" />
               ) : (
-                <div className="relative w-full max-w-4xl">
-                  {currentItem.thumbnail_proxy_url ? (
-                    <div className="relative rounded-xl overflow-hidden">
-                      <img src={currentItem.thumbnail_proxy_url?.replace('w=400', 'w=1200')} alt="" className="w-full" />
-                      {!slideshowPaused && (
-                        <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="absolute inset-0 flex items-center justify-center">
-                          <div className="w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                            <Play size={32} fill="white" color="white" />
-                          </div>
-                        </motion.div>
-                      )}
-                    </div>
-                  ) : (
-                    <video controls={!slideshowPaused} autoPlay={!slideshowPaused} className="w-full rounded-xl" src={currentItem.file_key} />
-                  )}
+                <div className="w-full h-full flex items-center justify-center p-4">
+                  <video
+                    key={currentItem._id}
+                    controls
+                    autoPlay
+                    playsInline
+                    className="max-w-full max-h-full object-contain rounded-xl"
+                    src={getR2Url(currentItem.file_key)}
+                    poster={currentItem.thumbnail_proxy_url?.replace('w=400', 'w=1200')}
+                    onClick={(e) => e.stopPropagation()}
+                  />
                 </div>
               )}
             </div>

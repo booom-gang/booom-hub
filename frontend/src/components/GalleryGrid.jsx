@@ -1,6 +1,6 @@
 import GalleryItemCard from './GalleryItemCard.jsx';
 
-const GalleryGrid = ({ items, onDelete, onPreview }) => {
+const GalleryGrid = ({ items, onDelete, onView }) => {
   if (items.length === 0) {
     return (
       <div className="text-center py-20">
@@ -11,9 +11,9 @@ const GalleryGrid = ({ items, onDelete, onPreview }) => {
   }
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1.5">
       {items.map((item, index) => (
-        <GalleryItemCard key={item._id} item={item} onDelete={onDelete} onPreview={onPreview} index={index} />
+        <GalleryItemCard key={item._id} item={item} onDelete={onDelete} onView={onView} index={index} />
       ))}
     </div>
   );

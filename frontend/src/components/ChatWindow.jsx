@@ -173,8 +173,8 @@ const ChatWindow = () => {
 
   return (
     <div className="flex flex-col h-full relative overflow-hidden">
-      <div ref={containerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto px-4 py-4 flex flex-col" style={{ scrollbarWidth: 'none' }}>
-        <div className="mt-auto">
+      <div ref={containerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto px-4 py-4" style={{ scrollbarWidth: 'none', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+        <div>
         {hasMore && messages.length > 0 && (
           <button onClick={loadOlder} className="w-full py-2 text-xs rounded-xl mb-3 hover:bg-[var(--bg-tertiary)] transition-colors font-medium" style={{ color: 'var(--text-muted)' }}>
             load older messages

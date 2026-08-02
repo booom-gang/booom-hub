@@ -1,13 +1,11 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Play, Trash2, Download, X } from 'lucide-react';
+import { Play, Trash2, Download } from 'lucide-react';
 import { formatRelativeTime } from '../utils/formatDate.js';
 import { getR2Url } from '../utils/constants.js';
 import useAuth from '../hooks/useAuth.js';
 
-const GalleryItemCard = ({ item, onDelete, onPreview, index }) => {
-  const [hovered, setHovered] = useState(false);
-  const [showActions, setShowActions] = useState(false);
+const GalleryItemCard = ({ item, onDelete, onView, index }) => {
   const { user } = useAuth();
   const isVideo = item.media_type === 'video';
   const thumbnailUrl = isVideo ? (item.thumbnail_proxy_url || item.proxy_url) : item.proxy_url;
@@ -30,90 +28,60 @@ const GalleryItemCard = ({ item, onDelete, onPreview, index }) => {
     } catch { window.open(url, '_blank'); }
   };
 
-  const handleClick = (e) => {
-    e.stopPropagation();
-    if (isVideo) {
-      onPreview?.('video', thumbnailUrl, index);
-    } else {
-      setShowActions(!showActions);
-    }
-  };
-
-  const handlePreview = (e) => {
-    e.stopPropagation();
-    onPreview?.(isVideo ? 'video' : 'image', thumbnailUrl, index);
-  };
-
   return (
     <motion.div
-      className="relative group cursor-pointer overflow-hidden rounded-2xl"
-      style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border-color)' }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => { setHovered(false); if (!showActions) setShowActions(false); }}
-      onClick={handleClick}
-      whileHover={{ y: -4, boxShadow: '0 8px 30px rgb(0 0 0 / 0.3)' }}
-      transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+      className="relative group cursor-pointer overflow-hidden rounded-xl"
+      style={{ backgroundColor: 'var(--bg-tertiary)' }}
+      onClick={() => onView(index)}
+      whileHover={{ scale: 1.02 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
     >
       <div className="aspect-square">
-        <img src={thumbnailUrl} alt="" className="w-full h-full object-cover transition-transform duration-300" style={{ transform: hovered ? 'scale(1.06)' : 'scale(1)' }} loading="lazy" />
+        <img
+          src={thumbnailUrl}
+          alt=""
+          className="w-full h-full object-cover"
+          loading="lazy"
+          onError={(e) => {
+            const raw = getR2Url(item.file_key);
+            if (raw && e.target.src !== raw) e.target.src = raw;
+          }}
+        />
       </div>
 
       {isVideo && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-            <Play size={20} fill="white" color="white" />
+          <div className="w-10 h-10 rounded-full flex items-center justify-center bg-black/40">
+            <Play size={16} fill="white" color="white" />
           </div>
         </div>
       )}
 
-      <motion.div
-        initial={false}
-        animate={{ opacity: hovered || showActions ? 1 : 0 }}
-        transition={{ duration: 0.15 }}
-        className="absolute inset-0 flex flex-col justify-between p-3 pointer-events-none"
-        style={{ background: 'linear-gradient(transparent 40%, rgba(0,0,0,0.7))' }}
+      <div
+        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2 pointer-events-none"
+        style={{ background: 'linear-gradient(transparent 60%, rgba(0,0,0,0.6))' }}
       >
-        <div className="flex justify-between items-start pointer-events-auto">
-          {showActions && (
-            <motion.button
-              onClick={(e) => { e.stopPropagation(); setShowActions(false); }}
-              className="w-7 h-7 rounded-full flex items-center justify-center bg-black/30 hover:bg-black/50 transition-colors"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
+        <div className="flex items-center gap-1.5 ml-auto pointer-events-auto">
+          <button
+            onClick={handleDownload}
+            className="w-7 h-7 rounded-full flex items-center justify-center bg-black/40 hover:bg-black/60 transition-colors"
+          >
+            <Download size={12} color="white" />
+          </button>
+          {isOwner && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete(item._id); }}
+              className="w-7 h-7 rounded-full flex items-center justify-center bg-black/40 hover:bg-red-600/80 transition-colors"
             >
-              <X size={12} color="white" />
-            </motion.button>
+              <Trash2 size={12} color="white" />
+            </button>
           )}
-          <div className="flex gap-1.5 ml-auto">
-            <motion.button
-              onClick={handleDownload}
-              className="w-7 h-7 rounded-full flex items-center justify-center bg-black/30 hover:bg-black/50 transition-colors"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              title="Download"
-            >
-              <Download size={12} color="white" />
-            </motion.button>
-            {isOwner && (
-              <motion.button
-                onClick={(e) => { e.stopPropagation(); onDelete(item._id); }}
-                className="w-7 h-7 rounded-full flex items-center justify-center bg-black/30 hover:bg-black/50 transition-colors"
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-              >
-                <Trash2 size={12} color="white" />
-              </motion.button>
-            )}
-          </div>
         </div>
+      </div>
 
-        <div className="pointer-events-auto">
-          <div className="flex items-center gap-1.5">
-            <span className="text-white text-xs font-semibold">{item.user_id?.username || 'Unknown'}</span>
-          </div>
-          <p className="text-white/50 text-[10px]">{formatRelativeTime(item.created_at)}</p>
-        </div>
-      </motion.div>
+      <div className="absolute bottom-0 left-0 right-0 p-2 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+        <p className="text-white/70 text-[10px]">{formatRelativeTime(item.created_at)}</p>
+      </div>
     </motion.div>
   );
 };

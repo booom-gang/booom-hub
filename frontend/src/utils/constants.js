@@ -15,8 +15,6 @@ export const MAX_ABOUT_LENGTH = 300;
 export const MAX_EVENT_TITLE_LENGTH = 120;
 export const MAX_EVENT_DESCRIPTION_LENGTH = 1000;
 
-export const VIDEO_MAX_SIZE_MB = 150;
-export const VIDEO_MAX_DURATION_SECONDS = 300;
 export const GALLERY_PAGE_SIZE = 24;
 
 export const TYPING_DEBOUNCE_MS = 3000;

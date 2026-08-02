@@ -8,7 +8,6 @@ import { uploadFile } from '../services/uploadService.js';
 import { GALLERY_PAGE_SIZE, getR2Url } from '../utils/constants.js';
 import useAuth from '../hooks/useAuth.js';
 
-const FILTERS = ['All', 'Photos', 'Videos'];
 let uploadCounter = 0;
 
 const GalleryPage = () => {
@@ -17,7 +16,6 @@ const GalleryPage = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('All');
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [viewIndex, setViewIndex] = useState(null);
@@ -48,7 +46,6 @@ const GalleryPage = () => {
       file,
       fileName: file.name,
       preview: URL.createObjectURL(file),
-      isVideo: file.type.startsWith('video/'),
       progress: 0,
       status: 'pending',
     }));
@@ -66,10 +63,9 @@ const GalleryPage = () => {
       return new Promise(async (resolve) => {
         let r2Result = null;
         try {
-          const mediaKind = fileObj.isVideo ? 'gallery-video' : 'gallery-image';
           r2Result = await uploadFile({
             file: fileObj.file,
-            mediaKind,
+            mediaKind: 'gallery-image',
             onProgress: (p) => {
               setUploadItems((prev) => prev.map((item, idx) =>
                 idx === i ? { ...item, progress: p } : item
@@ -77,9 +73,8 @@ const GalleryPage = () => {
             },
           });
           await mediaService.createGalleryItem({
-            media_type: fileObj.isVideo ? 'video' : 'image',
+            media_type: 'image',
             file_key: r2Result.fileKey,
-            thumbnail_key: r2Result.thumbnailKey,
             file_size_bytes: r2Result.fileSizeBytes,
           });
           setUploadItems((prev) => prev.map((item, idx) =>
@@ -89,7 +84,7 @@ const GalleryPage = () => {
         } catch (err) {
           console.error(err);
           if (r2Result?.fileKey) {
-            try { await mediaService.cleanupR2(r2Result.fileKey, r2Result.thumbnailKey); } catch {}
+            try { await mediaService.cleanupR2(r2Result.fileKey); } catch {}
           }
           setUploadItems((prev) => prev.map((item, idx) =>
             idx === i ? { ...item, status: 'error' } : item
@@ -145,12 +140,7 @@ const GalleryPage = () => {
       setItems((prev) => {
         const next = prev.filter((i) => i._id !== deleteTarget);
         if (deleteFromViewer) {
-          const filtered = next.filter((item) => {
-            if (filter === 'Photos') return item.media_type === 'image';
-            if (filter === 'Videos') return item.media_type === 'video';
-            return true;
-          });
-          const newIdx = Math.min(viewIndex, filtered.length - 1);
+          const newIdx = Math.min(viewIndex, next.length - 1);
           setViewIndex(newIdx >= 0 ? newIdx : null);
         }
         return next;
@@ -160,11 +150,7 @@ const GalleryPage = () => {
     setConfirmOpen(false);
   };
 
-  const viewItems = items.filter((item) => {
-    if (filter === 'Photos') return item.media_type === 'image';
-    if (filter === 'Videos') return item.media_type === 'video';
-    return true;
-  });
+  const viewItems = items;
 
   const openViewer = (idx) => setViewIndex(idx);
   const closeViewer = () => setViewIndex(null);
@@ -187,10 +173,8 @@ const GalleryPage = () => {
 
   const handleViewerDownload = async () => {
     if (!currentItem) return;
-    const isVideo = currentItem.media_type === 'video';
-    const url = isVideo ? getR2Url(currentItem.file_key) : (currentItem.proxy_url || getR2Url(currentItem.file_key));
-    const ext = isVideo ? 'mp4' : 'jpg';
-    const name = `booom-${currentItem.user_id?.username || 'media'}-${Date.now()}.${ext}`;
+    const url = currentItem.proxy_url || getR2Url(currentItem.file_key);
+    const name = `booom-${currentItem.user_id?.username || 'media'}-${Date.now()}.jpg`;
     try {
       const res = await fetch(url);
       const blob = await res.blob();
@@ -220,18 +204,12 @@ const GalleryPage = () => {
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*,video/*"
+            accept="image/*"
             multiple
             onChange={(e) => handleFileSelect(e.target.files)}
             className="hidden"
           />
         </label>
-      </div>
-
-      <div className="flex gap-2 mb-4">
-        {FILTERS.map((f) => (
-          <button key={f} onClick={() => setFilter(f)} className={`filter-chip ${filter === f ? 'active' : ''}`}>{f}</button>
-        ))}
       </div>
 
       {loading ? (
@@ -300,9 +278,6 @@ const GalleryPage = () => {
                   return (
                     <div key={fileObj.id} className="relative aspect-square rounded-xl overflow-hidden" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
                       <img src={fileObj.preview} alt="" className="w-full h-full object-cover" style={{ opacity: status === 'error' ? 0.4 : status === 'done' ? 0.5 : 0.8 }} />
-                      {fileObj.isVideo && (
-                        <div className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded text-[8px] font-bold" style={{ backgroundColor: 'var(--accent)', color: '#fff' }}>VID</div>
-                      )}
                       {status === 'pending' && (
                         <button
                           onClick={() => removePendingItem(fileObj.id)}
@@ -381,16 +356,12 @@ const GalleryPage = () => {
                   <ChevronLeft size={20} color="white" />
                 </button>
               )}
-              {currentItem.media_type === 'image' ? (
-                <img
-                  src={currentItem.proxy_url || getR2Url(currentItem.file_key)}
-                  alt=""
-                  className="max-w-full max-h-full object-contain"
-                  onError={(e) => { const raw = getR2Url(currentItem.file_key); if (raw && e.target.src !== raw) e.target.src = raw; }}
-                />
-              ) : (
-                <video key={currentItem._id} controls playsInline className="max-w-full max-h-full object-contain" src={getR2Url(currentItem.file_key)} poster={currentItem.thumbnail_proxy_url} />
-              )}
+              <img
+                src={currentItem.proxy_url || getR2Url(currentItem.file_key)}
+                alt=""
+                className="max-w-full max-h-full object-contain"
+                onError={(e) => { const raw = getR2Url(currentItem.file_key); if (raw && e.target.src !== raw) e.target.src = raw; }}
+              />
               {viewIndex < viewItems.length - 1 && (
                 <button onClick={nextView} className="absolute right-2 z-10 w-10 h-10 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/20 transition-colors">
                   <ChevronRight size={20} color="white" />
@@ -398,20 +369,18 @@ const GalleryPage = () => {
               )}
             </div>
 
-            {currentItem.media_type === 'image' && (
-              <div className="shrink-0 py-2 flex justify-center gap-1 px-4 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
-                {viewItems.map((item, i) => (
-                  <button
-                    key={item._id}
-                    onClick={() => setViewIndex(i)}
-                    className="shrink-0 w-12 h-12 rounded-lg overflow-hidden border-2 transition-colors"
-                    style={{ borderColor: i === viewIndex ? 'var(--accent)' : 'transparent' }}
-                  >
-                    <img src={item.thumbnail_proxy_url || item.proxy_url || getR2Url(item.file_key)} alt="" className="w-full h-full object-cover" onError={(e) => { const raw = getR2Url(item.file_key); if (raw && e.target.src !== raw) e.target.src = raw; }} />
-                  </button>
-                ))}
-              </div>
-            )}
+            <div className="shrink-0 py-2 flex justify-center gap-1 px-4 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+              {viewItems.map((item, i) => (
+                <button
+                  key={item._id}
+                  onClick={() => setViewIndex(i)}
+                  className="shrink-0 w-12 h-12 rounded-lg overflow-hidden border-2 transition-colors"
+                  style={{ borderColor: i === viewIndex ? 'var(--accent)' : 'transparent' }}
+                >
+                  <img src={item.proxy_url || getR2Url(item.file_key)} alt="" className="w-full h-full object-cover" onError={(e) => { const raw = getR2Url(item.file_key); if (raw && e.target.src !== raw) e.target.src = raw; }} />
+                </button>
+              ))}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -421,7 +390,7 @@ const GalleryPage = () => {
         onClose={() => { setConfirmOpen(false); setDeleteTarget(null); setDeleteFromViewer(false); }}
         onConfirm={confirmDelete}
         title="Delete this?"
-        message="This media will be permanently removed."
+        message="This image will be permanently removed."
         confirmText="Delete it"
       />
     </div>

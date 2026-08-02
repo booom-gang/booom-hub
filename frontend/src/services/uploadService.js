@@ -4,43 +4,6 @@ import mediaService from './mediaService.js';
 
 const useMocks = import.meta.env.VITE_USE_MOCKS === 'true';
 
-const generateVideoThumbnail = (file) => {
-  return new Promise((resolve, reject) => {
-    const video = document.createElement('video');
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-
-    video.preload = 'metadata';
-    video.muted = true;
-
-    const url = URL.createObjectURL(file);
-    video.src = url;
-
-    video.onloadeddata = () => {
-      video.currentTime = 1;
-    };
-
-    video.onseeked = () => {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      ctx.drawImage(video, 0, 0);
-      canvas.toBlob(
-        (blob) => {
-          URL.revokeObjectURL(url);
-          resolve(blob);
-        },
-        'image/jpeg',
-        0.8
-      );
-    };
-
-    video.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error('Failed to generate video thumbnail'));
-    };
-  });
-};
-
 export const uploadFile = async ({ file, userId, mediaKind, onProgress }) => {
   if (useMocks) {
     if (onProgress) {
@@ -53,7 +16,6 @@ export const uploadFile = async ({ file, userId, mediaKind, onProgress }) => {
     }
     return {
       fileKey: `${mediaKind}/mock-${Date.now()}-${file.name}`,
-      thumbnailKey: null,
       publicUrl: `https://mock-r2.example.com/${mediaKind}/${file.name}`,
       fileSizeBytes: file.size,
     };
@@ -85,23 +47,7 @@ export const uploadFile = async ({ file, userId, mediaKind, onProgress }) => {
     },
   });
 
-  let thumbnailKey = null;
-  if (file.type.startsWith('video/') && mediaKind === 'gallery-video') {
-    if (onProgress) onProgress(95);
-
-    const thumbBlob = await generateVideoThumbnail(file);
-    const thumbFileName = `thumbnail-${Date.now()}.jpg`;
-
-    const thumbResult = await mediaService.getPresignedUrl(thumbFileName, 'image/jpeg', 'gallery-video-thumb');
-
-    await axios.put(thumbResult.uploadUrl, thumbBlob, {
-      headers: { 'Content-Type': 'image/jpeg' },
-    });
-
-    thumbnailKey = thumbResult.fileKey;
-  }
-
-  return { fileKey, thumbnailKey, publicUrl, fileSizeBytes: fileToUpload.size || file.size };
+  return { fileKey, publicUrl, fileSizeBytes: fileToUpload.size || file.size };
 };
 
 export const uploadProfilePicture = async ({ file, userId, onProgress }) => {

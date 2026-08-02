@@ -18,7 +18,7 @@ export const createPresignedUrl = async (req, res, next) => {
     if (!fileType || typeof fileType !== 'string') {
       return res.status(400).json({ error: 'File type is required' });
     }
-    if (!mediaKind || !['gallery-image', 'gallery-video', 'gallery-video-thumb', 'profile-picture'].includes(mediaKind)) {
+    if (!mediaKind || !['gallery-image', 'profile-picture'].includes(mediaKind)) {
       return res.status(400).json({ error: 'Invalid media kind' });
     }
 
@@ -46,10 +46,10 @@ const deleteR2File = async (key) => {
 
 export const createGalleryItem = async (req, res, next) => {
   try {
-    const { media_type, file_key, thumbnail_key, file_size_bytes } = req.body;
+    const { media_type, file_key, file_size_bytes } = req.body;
 
-    if (!media_type || !['image', 'video'].includes(media_type)) {
-      return res.status(400).json({ error: 'Valid media type is required' });
+    if (media_type !== 'image') {
+      return res.status(400).json({ error: 'Only image media type is supported' });
     }
     if (!file_key || typeof file_key !== 'string') {
       return res.status(400).json({ error: 'File key is required' });
@@ -62,14 +62,13 @@ export const createGalleryItem = async (req, res, next) => {
     try {
       item = await GalleryItem.create({
         user_id: req.user.userId,
-        media_type,
+        media_type: 'image',
         file_key,
-        thumbnail_key: thumbnail_key || null,
+        thumbnail_key: null,
         file_size_bytes,
       });
     } catch (dbError) {
       await deleteR2File(file_key);
-      if (thumbnail_key) await deleteR2File(thumbnail_key);
       throw dbError;
     }
 
@@ -86,8 +85,8 @@ export const getGallery = async (req, res, next) => {
     const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 24));
     const skip = (page - 1) * limit;
 
-    const total = await GalleryItem.countDocuments();
-    const items = await GalleryItem.find()
+    const total = await GalleryItem.countDocuments({ media_type: 'image' });
+    const items = await GalleryItem.find({ media_type: 'image' })
       .sort({ created_at: -1 })
       .skip(skip)
       .limit(limit)
@@ -97,10 +96,6 @@ export const getGallery = async (req, res, next) => {
       const obj = item.toObject();
       const baseUrl = `${process.env.R2_PUBLIC_BASE_URL}/${obj.file_key}`;
       obj.proxy_url = `https://wsrv.nl/?url=${encodeURIComponent(baseUrl)}&output=webp&q=80`;
-      if (obj.thumbnail_key) {
-        const thumbUrl = `${process.env.R2_PUBLIC_BASE_URL}/${obj.thumbnail_key}`;
-        obj.thumbnail_proxy_url = `https://wsrv.nl/?url=${encodeURIComponent(thumbUrl)}&w=400&output=webp&q=80`;
-      }
       return obj;
     });
 
@@ -149,83 +144,43 @@ export const deleteGalleryItem = async (req, res, next) => {
 
 export const cleanupR2ByKey = async (req, res, next) => {
   try {
-    const { file_key, thumbnail_key } = req.body;
+    const { file_key } = req.body;
     if (file_key) await deleteR2File(file_key);
-    if (thumbnail_key) await deleteR2File(thumbnail_key);
     res.json({ message: 'Cleanup complete' });
   } catch (error) {
     next(error);
   }
 };
 
-export const backfillR2 = async (req, res, next) => {
+export const deleteAllVideos = async (req, res, next) => {
   try {
-    const prefixes = ['gallery-image', 'gallery-video'];
-    const allR2Keys = [];
+    const videoPrefixes = ['gallery-video/', 'gallery-video-thumb/'];
+    let deletedFiles = 0;
+    let deletedDbRecords = 0;
 
-    for (const prefix of prefixes) {
+    for (const prefix of videoPrefixes) {
       let continuationToken;
       do {
         const command = new ListObjectsV2Command({
           Bucket: process.env.R2_BUCKET_NAME,
-          Prefix: `${prefix}/`,
+          Prefix: prefix,
           ContinuationToken: continuationToken,
         });
         const response = await r2Client.send(command);
         if (response.Contents) {
-          allR2Keys.push(...response.Contents.map((obj) => ({ Key: obj.Key, Size: obj.Size })));
+          for (const obj of response.Contents) {
+            await deleteR2File(obj.Key);
+            deletedFiles++;
+          }
         }
         continuationToken = response.NextContinuationToken;
       } while (continuationToken);
     }
 
-    const dbItems = await GalleryItem.find().select('file_key');
-    const dbKeys = new Set(dbItems.map((item) => item.file_key));
+    const result = await GalleryItem.deleteMany({ media_type: 'video' });
+    deletedDbRecords = result.deletedCount;
 
-    const orphans = allR2Keys.filter((obj) => !dbKeys.has(obj.Key));
-
-    let created = 0;
-    for (const obj of orphans) {
-      const key = obj.Key;
-      const parts = key.split('/');
-      if (parts.length < 3) continue;
-
-      const mediaKind = parts[0];
-      const userId = parts[1];
-      const fileName = parts.slice(2).join('/');
-
-      const isVideo = mediaKind === 'gallery-video';
-
-      let thumbnailKey = null;
-      if (isVideo) {
-        const thumbPrefix = `gallery-video-thumb/${userId}/`;
-        const thumbCommand = new ListObjectsV2Command({
-          Bucket: process.env.R2_BUCKET_NAME,
-          Prefix: thumbPrefix,
-        });
-        const thumbResponse = await r2Client.send(thumbCommand);
-        if (thumbResponse.Contents) {
-          const baseName = fileName.replace(/\.[^.]+$/, '');
-          const match = thumbResponse.Contents.find((t) => t.Key.includes(baseName));
-          if (match) thumbnailKey = match.Key;
-        }
-      }
-
-      try {
-        await GalleryItem.create({
-          user_id: userId,
-          media_type: isVideo ? 'video' : 'image',
-          file_key: key,
-          thumbnail_key: thumbnailKey,
-          file_size_bytes: obj.Size || 0,
-        });
-        created++;
-      } catch (err) {
-        console.error(`Failed to create record for ${key}:`, err.message);
-      }
-    }
-
-    res.json({ totalR2Files: allR2Keys.length, existingDbRecords: dbKeys.size, orphanedFound: orphans.length, recordsCreated: created });
+    res.json({ deletedFiles, deletedDbRecords });
   } catch (error) {
     next(error);
   }

@@ -9,6 +9,7 @@ import messageService from '../services/messageService.js';
 import useSocket from '../hooks/useSocket.js';
 import useAuth from '../hooks/useAuth.js';
 import { TYPING_DEBOUNCE_MS } from '../utils/constants.js';
+import { formatChatDate, isDifferentDay } from '../utils/formatDate.js';
 
 const ChatWindow = () => {
   const [messages, setMessages] = useState([]);
@@ -139,9 +140,21 @@ const ChatWindow = () => {
             <p className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>say something!</p>
           </div>
         )}
-        {messages.map((msg, i) => (
-          <ChatBubble key={msg._id} message={msg} showSender={shouldShowSender(msg, i)} />
-        ))}
+        {messages.map((msg, i) => {
+          const showDate = i === 0 || isDifferentDay(messages[i - 1].timestamp, msg.timestamp);
+          return (
+            <div key={msg._id}>
+              {showDate && (
+                <div className="flex items-center justify-center my-4">
+                  <div className="px-3 py-1 rounded-full text-[10px] font-bold" style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-muted)' }}>
+                    {formatChatDate(msg.timestamp)}
+                  </div>
+                </div>
+              )}
+              <ChatBubble message={msg} showSender={shouldShowSender(msg, i)} />
+            </div>
+          );
+        })}
         <div ref={messagesEndRef} />
       </div>
 

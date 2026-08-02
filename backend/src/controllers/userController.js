@@ -1,4 +1,6 @@
 import User from '../models/User.js';
+import { DeleteObjectCommand } from '@aws-sdk/client-s3';
+import r2Client from '../config/r2Client.js';
 
 export const getAllUsers = async (req, res, next) => {
   try {
@@ -70,6 +72,38 @@ export const updateMe = async (req, res, next) => {
     }
 
     res.json(user);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteProfilePicture = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (!user.profile_picture) {
+      return res.status(400).json({ error: 'No profile picture to delete' });
+    }
+
+    const fileKey = user.profile_picture;
+
+    try {
+      await r2Client.send(new DeleteObjectCommand({
+        Bucket: process.env.R2_BUCKET_NAME,
+        Key: fileKey,
+      }));
+    } catch (r2Error) {
+      console.error('R2 delete error:', r2Error);
+    }
+
+    user.profile_picture = null;
+    await user.save();
+
+    const updatedUser = await User.findById(req.user.userId).select('-__v');
+    res.json(updatedUser);
   } catch (error) {
     next(error);
   }

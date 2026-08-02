@@ -55,7 +55,7 @@ const Navbar = () => {
           <motion.button
             onClick={logout}
             className="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-[var(--bg-tertiary)] transition-colors"
-            style={{ color: 'var(--text-muted)' }}
+            style={{ color: 'var(--danger)' }}
             whileHover={{ rotate: -10 }}
             whileTap={{ scale: 0.9 }}
             title="Log out"

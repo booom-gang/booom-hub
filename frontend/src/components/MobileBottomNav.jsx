@@ -6,7 +6,7 @@ const navItems = [
   { to: '/home', icon: Home, label: 'Home' },
   { to: '/gallery', icon: Image, label: 'Gallery' },
   { to: '/chat', icon: MessageCircle, label: 'Chat' },
-  { to: '/calendar', icon: Calendar, label: 'Cal' },
+  { to: '/calendar', icon: Calendar, label: 'Calendar' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ];
 
@@ -29,21 +29,23 @@ const MobileBottomNav = () => {
           >
             {({ isActive }) => (
               <>
-                {isActive && (
+                <div className="relative flex flex-col items-center">
+                  {isActive && (
+                    <motion.div
+                      layoutId="mobile-active"
+                      className="absolute -top-1 left-1/2 -translate-x-1/2 w-6 h-1 rounded-full"
+                      style={{ backgroundColor: 'var(--accent)' }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                    />
+                  )}
                   <motion.div
-                    layoutId="mobile-active"
-                    className="absolute -top-1 left-1/2 -translate-x-1/2 w-6 h-1 rounded-full"
-                    style={{ backgroundColor: 'var(--accent)' }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                  />
-                )}
-                <motion.div
-                  animate={isActive ? { scale: 1.15, y: -1 } : { scale: 1, y: 0 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-                  style={{ color: isActive ? 'var(--accent)' : 'var(--text-muted)' }}
-                >
-                  <item.icon size={20} strokeWidth={isActive ? 2.5 : 1.7} />
-                </motion.div>
+                    animate={isActive ? { scale: 1.15, y: -1 } : { scale: 1, y: 0 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                    style={{ color: isActive ? 'var(--accent)' : 'var(--text-muted)' }}
+                  >
+                    <item.icon size={20} strokeWidth={isActive ? 2.5 : 1.7} />
+                  </motion.div>
+                </div>
                 <span
                   className="text-[10px]"
                   style={{

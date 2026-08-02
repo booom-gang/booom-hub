@@ -35,7 +35,7 @@ const ProfileCard = ({ user }) => {
       whileHover={{ y: -6, boxShadow: '0 0 40px rgba(242, 121, 43, 0.3), 0 12px 40px rgba(0,0,0,0.6)' }}
       transition={{ type: 'spring', stiffness: 300, damping: 25 }}
     >
-      <div className="relative h-80 overflow-hidden">
+      <div className="relative h-40 sm:h-80 overflow-hidden">
         {avatarUrl ? (
           <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
         ) : (
@@ -49,7 +49,7 @@ const ProfileCard = ({ user }) => {
 
         <div
           className="absolute inset-0 pointer-events-none"
-          style={{ background: 'linear-gradient(to bottom, transparent 50%, #1a1208 100%)' }}
+          style={{ background: 'linear-gradient(to bottom, transparent 30%, #1a1208 100%)' }}
         />
 
         <div className="absolute top-3 left-3">
@@ -72,17 +72,17 @@ const ProfileCard = ({ user }) => {
         </motion.button>
       </div>
 
-      <div className="px-6 pt-4 pb-6">
+      <div className="px-5 sm:px-6 pt-3 sm:pt-4 pb-5 sm:pb-6">
         <h3
-          className="text-3xl font-bold tracking-tight mb-4"
+          className="text-2xl sm:text-3xl font-bold tracking-tight mb-3 sm:mb-4"
           style={{ color: 'var(--text-primary)' }}
         >
           {user.username} <span style={{ color: 'var(--accent)' }}>✦</span>
         </h3>
 
         {hobbies.length > 0 && (
-          <div className="flex items-center gap-2 mb-5 flex-wrap">
-            {hobbies.slice(0, 3).map((hobby) => (
+          <div className="flex items-center gap-2 mb-4 sm:mb-5 flex-wrap">
+            {hobbies.slice(0, 4).map((hobby) => (
               <span
                 key={hobby}
                 className="px-3 py-1.5 rounded-full text-[12px] font-semibold flex items-center gap-1.5"
@@ -99,7 +99,7 @@ const ProfileCard = ({ user }) => {
         )}
 
         <div
-          className="flex items-center justify-center gap-2 pt-4"
+          className="flex items-center justify-center gap-2 pt-3 sm:pt-4"
           style={{ borderTop: '1px solid rgba(242,121,43,0.15)' }}
         >
           <Calendar size={12} style={{ color: 'var(--text-muted)' }} />

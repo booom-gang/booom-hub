@@ -1,4 +1,4 @@
-import { format, formatDistanceToNow, startOfMonth, endOfMonth } from 'date-fns';
+import { format, formatDistanceToNow, startOfMonth, endOfMonth, isToday, isYesterday, isSameDay } from 'date-fns';
 
 export const formatDate = (date) => {
   return format(new Date(date), 'MMM d, yyyy');
@@ -22,4 +22,19 @@ export const getMonthRange = (year, month) => {
     start: startOfMonth(date),
     end: endOfMonth(date),
   };
+};
+
+export const formatChatDate = (date) => {
+  const d = new Date(date);
+  if (isToday(d)) return 'Today';
+  if (isYesterday(d)) return 'Yesterday';
+  return format(d, 'MMM d, yyyy');
+};
+
+export const formatChatTimestamp = (date) => {
+  return format(new Date(date), 'h:mm a');
+};
+
+export const isDifferentDay = (date1, date2) => {
+  return !isSameDay(new Date(date1), new Date(date2));
 };

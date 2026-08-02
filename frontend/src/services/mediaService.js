@@ -62,6 +62,15 @@ const mediaService = {
     const response = await api.patch('/users/me', updates);
     return response.data;
   },
+
+  deleteProfilePicture: async () => {
+    if (useMocks) {
+      await new Promise((r) => setTimeout(r, 100));
+      return mockUsers.updateMe({ profile_picture: null });
+    }
+    const response = await api.delete('/users/me/profile-picture');
+    return response.data;
+  },
 };
 
 export default mediaService;

@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, LogOut, Save, Loader2, User, Palette, Palette as PaletteIcon, X, Plus } from 'lucide-react';
+import { Camera, LogOut, Save, Loader2, User, Palette, Palette as PaletteIcon, X, Plus, Trash2 } from 'lucide-react';
 import useAuth from '../hooks/useAuth.js';
 import useTheme from '../hooks/useTheme.js';
 import ThemeToggle from '../components/ThemeToggle.jsx';
@@ -46,6 +46,18 @@ const SettingsPage = () => {
       const updated = await mediaService.updateMe({ profile_picture: result.fileKey });
       updateUser(updated);
       setSuccess('Photo updated!');
+      setTimeout(() => setSuccess(''), 2000);
+    } catch (err) { setError(err.response?.data?.error || 'Failed'); } finally { setUploading(false); }
+  };
+
+  const handleDeleteProfilePicture = async () => {
+    if (!window.confirm('Remove your profile picture?')) return;
+    setUploading(true);
+    setError('');
+    try {
+      const updated = await mediaService.deleteProfilePicture();
+      updateUser(updated);
+      setSuccess('Photo removed!');
       setTimeout(() => setSuccess(''), 2000);
     } catch (err) { setError(err.response?.data?.error || 'Failed'); } finally { setUploading(false); }
   };
@@ -154,6 +166,18 @@ const SettingsPage = () => {
                   >
                     {uploading ? <Loader2 size={12} className="animate-spin" /> : <Camera size={12} />}
                   </motion.button>
+                  {avatarUrl && (
+                    <motion.button
+                      onClick={handleDeleteProfilePicture}
+                      className="absolute -top-1 -right-1 w-7 h-7 rounded-full flex items-center justify-center"
+                      style={{ backgroundColor: 'var(--danger)', color: '#fff' }}
+                      disabled={uploading}
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                    >
+                      <Trash2 size={10} />
+                    </motion.button>
+                  )}
                   <input ref={fileInputRef} type="file" accept="image/*" onChange={handleProfilePicture} className="hidden" />
                 </div>
                 <div>

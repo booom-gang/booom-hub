@@ -117,7 +117,7 @@ const CalendarView = () => {
                 }}
                 whileHover={{ scale: 1.05 }}
               >
-                <span className={`text-xs font-bold ${today && !selected ? 'flex items-center justify-center w-5 h-5 rounded-full' : ''}`}
+                <span className={`text-xs font-bold ${today && !selected ? 'inline-flex items-center justify-center w-6 h-6 rounded-full' : ''}`}
                   style={today && !selected ? { backgroundColor: 'var(--accent)', color: '#fff' } : {}}>
                   {format(day, 'd')}
                 </span>

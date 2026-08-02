@@ -28,13 +28,13 @@ const HomePage = () => {
   }, []);
 
   return (
-    <div className="min-h-[calc(100vh-64px)] flex flex-col relative overflow-hidden">
+    <div className="h-[calc(100vh-64px)] md:h-auto md:min-h-[calc(100vh-64px)] flex flex-col relative overflow-hidden">
       <StarDoodle className="absolute top-20 left-6" size={30} />
       <StarDoodle className="absolute top-32 right-10" size={18} />
       <Squiggle className="absolute top-40 left-2" />
       <StarDoodle className="absolute bottom-40 left-12" size={16} color="var(--accent)" />
 
-      <div className="px-5 pt-5 pb-1 relative z-10">
+      <div className="px-5 pt-5 pb-1 relative z-10 shrink-0">
         <motion.div
           initial={{ opacity: 0, x: -15 }}
           animate={{ opacity: 1, x: 0 }}
@@ -49,7 +49,7 @@ const HomePage = () => {
         </motion.div>
       </div>
 
-      <div className="flex-1 flex flex-col items-center justify-center px-4 py-4 relative z-10">
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-4 relative z-10 min-h-0">
         {loading ? (
           <motion.div
             className="w-7 h-7 rounded-full border-[3px] border-t-transparent"
@@ -68,13 +68,14 @@ const HomePage = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ type: 'spring', stiffness: 200, damping: 20, delay: 0.1 }}
+            className="w-full"
           >
             <CardDeck users={users} />
           </motion.div>
         )}
       </div>
 
-      <div className="px-5 pb-6 md:pb-4 pb-24 relative z-10">
+      <div className="px-5 pb-6 md:pb-4 pb-24 relative z-10 shrink-0">
         <div className="flex items-center justify-center gap-3">
           <motion.button
             onClick={() => navigate('/gallery')}
@@ -94,7 +95,7 @@ const HomePage = () => {
             whileTap={{ scale: 0.95 }}
           >
             <MessageCircle size={15} />
-            Message
+            Chat
           </motion.button>
         </div>
       </div>

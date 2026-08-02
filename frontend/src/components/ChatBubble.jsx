@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { formatTime } from '../utils/formatDate.js';
+import { formatChatTimestamp } from '../utils/formatDate.js';
 import useAuth from '../hooks/useAuth.js';
 
 const ChatBubble = ({ message, showSender }) => {
@@ -35,6 +35,13 @@ const ChatBubble = ({ message, showSender }) => {
       >
         <p className="whitespace-pre-wrap break-words">{message.message_text}</p>
       </div>
+
+      <span
+        className="text-[9px] mt-0.5 px-1"
+        style={{ color: 'var(--text-muted)' }}
+      >
+        {formatChatTimestamp(message.timestamp)}
+      </span>
     </motion.div>
   );
 };

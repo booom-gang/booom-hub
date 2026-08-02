@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, X, ChevronLeft, ChevronRight, Download, Trash2, Image as ImageIcon } from 'lucide-react';
+import { Upload, X, ChevronLeft, ChevronRight, Download, Trash2, Image as ImageIcon, Check, AlertCircle } from 'lucide-react';
 import GalleryGrid from '../components/GalleryGrid.jsx';
 import ConfirmModal from '../components/ConfirmModal.jsx';
 import mediaService from '../services/mediaService.js';
@@ -9,10 +9,7 @@ import { GALLERY_PAGE_SIZE, getR2Url } from '../utils/constants.js';
 import useAuth from '../hooks/useAuth.js';
 
 const FILTERS = ['All', 'Photos', 'Videos'];
-
-const activeUploads = new Map();
-const uploadListeners = new Set();
-const notifyUploadListeners = (u) => uploadListeners.forEach((fn) => fn(u));
+let uploadCounter = 0;
 
 const GalleryPage = () => {
   const { user } = useAuth();
@@ -20,12 +17,14 @@ const GalleryPage = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [uploads, setUploads] = useState([]);
   const [filter, setFilter] = useState('All');
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [viewIndex, setViewIndex] = useState(null);
   const [deleteFromViewer, setDeleteFromViewer] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadItems, setUploadItems] = useState([]);
   const fileInputRef = useRef(null);
 
   const fetchGallery = useCallback(async (pageNum, append = false) => {
@@ -39,51 +38,87 @@ const GalleryPage = () => {
 
   useEffect(() => { fetchGallery(1); }, [fetchGallery]);
 
-  useEffect(() => {
-    const listener = (u) => setUploads([...u]);
-    uploadListeners.add(listener);
-    setUploads([...activeUploads.values()]);
-    return () => uploadListeners.delete(listener);
-  }, []);
-
-  const handleFiles = async (files) => {
+  const handleFileSelect = (files) => {
     const fileArray = Array.from(files);
     if (fileArray.length === 0) return;
     if (fileInputRef.current) fileInputRef.current.value = '';
 
-    for (const file of fileArray) {
-      const uploadId = `upload-${Date.now()}-${Math.random()}`;
-      const uploadEntry = { id: uploadId, fileName: file.name, progress: 0, status: 'uploading' };
-      activeUploads.set(uploadId, uploadEntry);
-      notifyUploadListeners(activeUploads);
+    const previewItems = fileArray.map((file) => ({
+      id: `pending-${++uploadCounter}`,
+      file,
+      fileName: file.name,
+      preview: URL.createObjectURL(file),
+      isVideo: file.type.startsWith('video/'),
+      progress: 0,
+      status: 'pending',
+    }));
 
-      (async () => {
+    setPendingFiles(previewItems);
+  };
+
+  const handleUploadAll = async () => {
+    if (!pendingFiles || pendingFiles.length === 0) return;
+    setUploading(true);
+
+    setUploadItems(pendingFiles.map((f) => ({ ...f, status: 'uploading' })));
+
+    const promises = pendingFiles.map((fileObj, i) => {
+      return new Promise(async (resolve) => {
         try {
-          const mediaKind = file.type.startsWith('video/') ? 'gallery-video' : 'gallery-image';
+          const mediaKind = fileObj.isVideo ? 'gallery-video' : 'gallery-image';
           const result = await uploadFile({
-            file, mediaKind,
+            file: fileObj.file,
+            mediaKind,
             onProgress: (p) => {
-              const e = activeUploads.get(uploadId);
-              if (e) { e.progress = p; notifyUploadListeners(activeUploads); }
+              setUploadItems((prev) => prev.map((item, idx) =>
+                idx === i ? { ...item, progress: p } : item
+              ));
             },
           });
           await mediaService.createGalleryItem({
-            media_type: file.type.startsWith('video/') ? 'video' : 'image',
+            media_type: fileObj.isVideo ? 'video' : 'image',
             file_key: result.fileKey,
             thumbnail_key: result.thumbnailKey,
             file_size_bytes: result.fileSizeBytes,
           });
-          activeUploads.delete(uploadId);
-          notifyUploadListeners(activeUploads);
-          fetchGallery(1);
+          setUploadItems((prev) => prev.map((item, idx) =>
+            idx === i ? { ...item, status: 'done', progress: 100 } : item
+          ));
+          resolve();
         } catch (err) {
           console.error(err);
-          const e = activeUploads.get(uploadId);
-          if (e) { e.status = 'error'; notifyUploadListeners(activeUploads); }
-          setTimeout(() => { activeUploads.delete(uploadId); notifyUploadListeners(activeUploads); }, 3000);
+          setUploadItems((prev) => prev.map((item, idx) =>
+            idx === i ? { ...item, status: 'error' } : item
+          ));
+          resolve();
         }
-      })();
-    }
+      });
+    });
+
+    await Promise.all(promises);
+    setUploading(false);
+    fetchGallery(1);
+
+    setTimeout(() => {
+      setPendingFiles(null);
+      setUploadItems([]);
+      pendingFiles?.forEach((f) => URL.revokeObjectURL(f.preview));
+    }, 2000);
+  };
+
+  const closePending = () => {
+    pendingFiles?.forEach((f) => URL.revokeObjectURL(f.preview));
+    setPendingFiles(null);
+    setUploadItems([]);
+    setUploading(false);
+  };
+
+  const removePendingItem = (id) => {
+    setPendingFiles((prev) => {
+      const item = prev?.find((f) => f.id === id);
+      if (item) URL.revokeObjectURL(item.preview);
+      return prev?.filter((f) => f.id !== id) || null;
+    });
   };
 
   const handleDelete = async (id) => {
@@ -106,11 +141,12 @@ const GalleryPage = () => {
       setItems((prev) => {
         const next = prev.filter((i) => i._id !== deleteTarget);
         if (deleteFromViewer) {
-          const newIdx = Math.min(viewIndex, next.filter((item) => {
+          const filtered = next.filter((item) => {
             if (filter === 'Photos') return item.media_type === 'image';
             if (filter === 'Videos') return item.media_type === 'video';
             return true;
-          }).length - 1);
+          });
+          const newIdx = Math.min(viewIndex, filtered.length - 1);
           setViewIndex(newIdx >= 0 ? newIdx : null);
         }
         return next;
@@ -162,44 +198,35 @@ const GalleryPage = () => {
     } catch { window.open(url, '_blank'); }
   };
 
+  const pendingCount = pendingFiles?.length || 0;
+  const doneCount = uploadItems.filter((u) => u.status === 'done').length;
+  const errorCount = uploadItems.filter((u) => u.status === 'error').length;
+
   return (
     <div className="max-w-6xl mx-auto px-3 py-6">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-bold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
           Gallery <ImageIcon size={18} style={{ color: 'var(--accent)' }} />
         </h1>
-        <div className="flex items-center gap-2">
-          {uploads.length > 0 && (
-            <span className="text-[10px] font-bold px-2 py-1 rounded-full animate-pulse" style={{ backgroundColor: 'var(--accent)', color: '#fff' }}>
-              {uploads.length} uploading
-            </span>
-          )}
-          <label className="cursor-pointer">
-            <div className="btn-accent text-xs flex items-center gap-1.5 py-2 px-4" style={{ borderRadius: '9999px' }}>
-              <Upload size={14} />
-              Upload
-            </div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*,video/*"
-              multiple
-              onChange={(e) => handleFiles(e.target.files)}
-              className="hidden"
-            />
-          </label>
-        </div>
+        <label className="cursor-pointer">
+          <div className="btn-accent text-xs flex items-center gap-1.5 py-2 px-4" style={{ borderRadius: '9999px' }}>
+            <Upload size={14} />
+            Upload
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*,video/*"
+            multiple
+            onChange={(e) => handleFileSelect(e.target.files)}
+            className="hidden"
+          />
+        </label>
       </div>
 
       <div className="flex gap-2 mb-4">
         {FILTERS.map((f) => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`filter-chip ${filter === f ? 'active' : ''}`}
-          >
-            {f}
-          </button>
+          <button key={f} onClick={() => setFilter(f)} className={`filter-chip ${filter === f ? 'active' : ''}`}>{f}</button>
         ))}
       </div>
 
@@ -220,6 +247,99 @@ const GalleryPage = () => {
         </>
       )}
 
+      {/* Upload Preview Modal */}
+      <AnimatePresence>
+        {pendingFiles && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex flex-col"
+            style={{ backgroundColor: 'var(--bg-primary)' }}
+          >
+            <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ borderBottom: '1px solid var(--border-color)' }}>
+              <div className="flex items-center gap-3">
+                <button onClick={closePending} className="w-9 h-9 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
+                  <X size={18} style={{ color: 'var(--text-primary)' }} />
+                </button>
+                <div>
+                  <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>Upload</p>
+                  <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
+                    {uploading
+                      ? `${doneCount + errorCount} / ${pendingCount} ${errorCount > 0 ? `(${errorCount} failed)` : ''}`
+                      : `${pendingCount} files selected`
+                    }
+                  </p>
+                </div>
+              </div>
+              {!uploading && (
+                <button
+                  onClick={handleUploadAll}
+                  className="text-xs font-bold py-2 px-5 rounded-full"
+                  style={{ backgroundColor: 'var(--accent)', color: '#fff' }}
+                >
+                  Upload All
+                </button>
+              )}
+              {uploading && (
+                <div className="w-5 h-5 rounded-full border-[3px] border-t-transparent" style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }} />
+              )}
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-3">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
+                {pendingFiles.map((fileObj) => {
+                  const uploadState = uploadItems.find((u) => u.id === fileObj.id);
+                  const status = uploadState?.status || 'pending';
+                  const progress = uploadState?.progress || 0;
+
+                  return (
+                    <div key={fileObj.id} className="relative aspect-square rounded-xl overflow-hidden" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
+                      <img src={fileObj.preview} alt="" className="w-full h-full object-cover" style={{ opacity: status === 'error' ? 0.4 : status === 'done' ? 0.5 : 0.8 }} />
+                      {fileObj.isVideo && (
+                        <div className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded text-[8px] font-bold" style={{ backgroundColor: 'var(--accent)', color: '#fff' }}>VID</div>
+                      )}
+                      {status === 'pending' && (
+                        <button
+                          onClick={() => removePendingItem(fileObj.id)}
+                          className="absolute top-1.5 left-1.5 w-5 h-5 rounded-full flex items-center justify-center"
+                          style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}
+                        >
+                          <X size={10} color="white" />
+                        </button>
+                      )}
+                      {status === 'uploading' && (
+                        <div className="absolute bottom-0 left-0 right-0 h-1" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}>
+                          <div className="h-full transition-all duration-300" style={{ width: `${progress}%`, backgroundColor: 'var(--accent)' }} />
+                        </div>
+                      )}
+                      {status === 'done' && (
+                        <div className="absolute inset-0 flex items-center justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--accent)' }}>
+                            <Check size={14} color="white" />
+                          </div>
+                        </div>
+                      )}
+                      {status === 'error' && (
+                        <div className="absolute inset-0 flex items-center justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                          <AlertCircle size={20} color="#ef4444" />
+                        </div>
+                      )}
+                      <div className="absolute bottom-1 left-1 right-1">
+                        <p className="text-[8px] truncate px-1 py-0.5 rounded" style={{ backgroundColor: 'rgba(0,0,0,0.5)', color: '#fff' }}>
+                          {fileObj.fileName}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Fullscreen Viewer */}
       <AnimatePresence>
         {viewIndex !== null && currentItem && (
           <motion.div
@@ -240,11 +360,11 @@ const GalleryPage = () => {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <button onClick={handleViewerDownload} className="w-9 h-9 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/20 transition-colors" title="Download">
+                <button onClick={handleViewerDownload} className="w-9 h-9 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/20 transition-colors">
                   <Download size={16} color="white" />
                 </button>
                 {isCurrentOwner && (
-                  <button onClick={handleDeleteFromViewer} className="w-9 h-9 rounded-full flex items-center justify-center bg-white/10 hover:bg-red-600/60 transition-colors" title="Delete">
+                  <button onClick={handleDeleteFromViewer} className="w-9 h-9 rounded-full flex items-center justify-center bg-white/10 hover:bg-red-600/60 transition-colors">
                     <Trash2 size={16} color="white" />
                   </button>
                 )}
@@ -257,28 +377,16 @@ const GalleryPage = () => {
                   <ChevronLeft size={20} color="white" />
                 </button>
               )}
-
               {currentItem.media_type === 'image' ? (
                 <img
                   src={currentItem.proxy_url || getR2Url(currentItem.file_key)}
                   alt=""
                   className="max-w-full max-h-full object-contain"
-                  onError={(e) => {
-                    const raw = getR2Url(currentItem.file_key);
-                    if (raw && e.target.src !== raw) e.target.src = raw;
-                  }}
+                  onError={(e) => { const raw = getR2Url(currentItem.file_key); if (raw && e.target.src !== raw) e.target.src = raw; }}
                 />
               ) : (
-                <video
-                  key={currentItem._id}
-                  controls
-                  playsInline
-                  className="max-w-full max-h-full object-contain"
-                  src={getR2Url(currentItem.file_key)}
-                  poster={currentItem.thumbnail_proxy_url}
-                />
+                <video key={currentItem._id} controls playsInline className="max-w-full max-h-full object-contain" src={getR2Url(currentItem.file_key)} poster={currentItem.thumbnail_proxy_url} />
               )}
-
               {viewIndex < viewItems.length - 1 && (
                 <button onClick={nextView} className="absolute right-2 z-10 w-10 h-10 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/20 transition-colors">
                   <ChevronRight size={20} color="white" />
@@ -295,15 +403,7 @@ const GalleryPage = () => {
                     className="shrink-0 w-12 h-12 rounded-lg overflow-hidden border-2 transition-colors"
                     style={{ borderColor: i === viewIndex ? 'var(--accent)' : 'transparent' }}
                   >
-                    <img
-                      src={item.thumbnail_proxy_url || item.proxy_url || getR2Url(item.file_key)}
-                      alt=""
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        const raw = getR2Url(item.file_key);
-                        if (raw && e.target.src !== raw) e.target.src = raw;
-                      }}
-                    />
+                    <img src={item.thumbnail_proxy_url || item.proxy_url || getR2Url(item.file_key)} alt="" className="w-full h-full object-cover" onError={(e) => { const raw = getR2Url(item.file_key); if (raw && e.target.src !== raw) e.target.src = raw; }} />
                   </button>
                 ))}
               </div>

@@ -4,7 +4,6 @@ import { ArrowDown, Send, Smile } from 'lucide-react';
 import { motion } from 'framer-motion';
 import ChatBubble from './ChatBubble.jsx';
 import TypingIndicator from './TypingIndicator.jsx';
-import { CuteMascot } from './Decorations.jsx';
 import messageService from '../services/messageService.js';
 import useSocket from '../hooks/useSocket.js';
 import useAuth from '../hooks/useAuth.js';
@@ -212,14 +211,6 @@ const ChatWindow = () => {
       )}
 
       <div className="px-4 pb-3 pt-2 shrink-0" style={{ borderTop: '1px solid var(--border-color)' }}>
-        <div className="flex items-center gap-2 mb-3 px-1">
-          <CuteMascot className="w-10 h-10 opacity-30" />
-          <div>
-            <p className="text-xs font-bold" style={{ color: 'var(--text-primary)' }}>Stay positive! 🌟</p>
-            <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Great things take time.</p>
-          </div>
-        </div>
-
         <form onSubmit={sendMessage} className="flex items-center gap-2">
           <input
             ref={inputRef}

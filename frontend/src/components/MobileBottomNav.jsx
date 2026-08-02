@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Home, Image, MessageCircle, Calendar, Settings } from 'lucide-react';
 
 const navItems = [
-  { to: '/', icon: Home, label: 'Home' },
+  { to: '/home', icon: Home, label: 'Home' },
   { to: '/gallery', icon: Image, label: 'Gallery' },
   { to: '/chat', icon: MessageCircle, label: 'Chat' },
   { to: '/calendar', icon: Calendar, label: 'Cal' },
@@ -25,7 +25,6 @@ const MobileBottomNav = () => {
           <NavLink
             key={item.to}
             to={item.to}
-            end={item.to === '/'}
             className="relative flex flex-col items-center gap-0.5 py-1 px-3"
           >
             {({ isActive }) => (

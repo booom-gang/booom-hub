@@ -6,7 +6,7 @@ import useAuth from '../hooks/useAuth.js';
 import { getR2Url } from '../utils/constants.js';
 
 const navLinks = [
-  { to: '/', icon: Home, label: 'Home' },
+  { to: '/home', icon: Home, label: 'Home' },
   { to: '/gallery', icon: Image, label: 'Gallery' },
   { to: '/chat', icon: MessageCircle, label: 'Chat' },
   { to: '/calendar', icon: Calendar, label: 'Calendar' },
@@ -42,7 +42,6 @@ const Navbar = () => {
             <NavLink
               key={link.to}
               to={link.to}
-              end={link.to === '/'}
               className={({ isActive }) => `nav-pill ${isActive ? 'active' : ''}`}
             >
               <link.icon size={15} />

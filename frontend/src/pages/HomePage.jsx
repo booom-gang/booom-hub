@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { MessageCircle, Image, Download, Check } from 'lucide-react';
+import { MessageCircle, Image } from 'lucide-react';
 import CardDeck from '../components/CardDeck.jsx';
 import { StarDoodle, Squiggle, CuteMascot } from '../components/Decorations.jsx';
 import useAuth from '../hooks/useAuth.js';
@@ -12,7 +12,6 @@ const HomePage = () => {
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -96,30 +95,6 @@ const HomePage = () => {
           >
             <MessageCircle size={15} />
             Message
-          </motion.button>
-        </div>
-        <div className="flex justify-center mt-3">
-          <motion.button
-            onClick={async () => {
-              const url = window.location.origin + '/booom-hub/';
-              try {
-                await navigator.clipboard.writeText(url);
-                setCopied(true);
-                setTimeout(() => setCopied(false), 2000);
-              } catch {
-                const a = document.createElement('a');
-                a.href = url;
-                a.target = '_blank';
-                a.click();
-              }
-            }}
-            className="flex items-center gap-1.5 text-[11px] py-1.5 px-3 rounded-full font-medium"
-            style={{ color: copied ? 'var(--success)' : 'var(--text-muted)', border: '1px solid var(--border-color)' }}
-            whileHover={{ scale: 1.05, color: 'var(--accent)' }}
-            whileTap={{ scale: 0.95 }}
-          >
-            {copied ? <Check size={12} /> : <Download size={12} />}
-            {copied ? 'Link copied!' : 'Save to phone'}
           </motion.button>
         </div>
       </div>

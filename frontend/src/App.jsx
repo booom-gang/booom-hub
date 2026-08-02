@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { SocketProvider } from './context/SocketContext.jsx';
@@ -27,12 +27,13 @@ function App() {
     <ErrorBoundary>
       <ThemeProvider>
         <AuthProvider>
-          <BrowserRouter>
+          <HashRouter>
             <ProtectedRoute>
               <SocketProvider>
                 <AppShell>
                   <Routes>
-                    <Route path="/" element={<HomePage />} />
+                    <Route path="/" element={<Navigate to="/home" replace />} />
+                    <Route path="/home" element={<HomePage />} />
                     <Route path="/gallery" element={<GalleryPage />} />
                     <Route path="/chat" element={<ChatPage />} />
                     <Route path="/calendar" element={<CalendarPage />} />
@@ -41,7 +42,7 @@ function App() {
                 </AppShell>
               </SocketProvider>
             </ProtectedRoute>
-          </BrowserRouter>
+          </HashRouter>
         </AuthProvider>
       </ThemeProvider>
     </ErrorBoundary>

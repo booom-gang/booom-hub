@@ -43,9 +43,9 @@ const ChatBubble = ({ message, showSender, onDelete }) => {
         </div>
       )}
 
-      <div className="relative">
+      <div className="relative" style={{ maxWidth: '80%' }}>
         <div
-          className={`max-w-[78%] px-3.5 py-2 text-[14px] leading-relaxed ${
+          className={`inline-block px-3.5 py-2 text-[14px] leading-relaxed ${
             isOwn ? 'rounded-2xl rounded-br-md' : 'rounded-2xl rounded-bl-md'
           }`}
           style={{

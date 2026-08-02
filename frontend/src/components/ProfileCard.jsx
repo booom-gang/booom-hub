@@ -35,7 +35,7 @@ const ProfileCard = ({ user }) => {
       whileHover={{ y: -6, boxShadow: '0 0 40px rgba(242, 121, 43, 0.3), 0 12px 40px rgba(0,0,0,0.6)' }}
       transition={{ type: 'spring', stiffness: 300, damping: 25 }}
     >
-      <div className="relative h-40 sm:h-80 overflow-hidden">
+      <div className="relative h-48 sm:h-80 overflow-hidden">
         {avatarUrl ? (
           <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
         ) : (

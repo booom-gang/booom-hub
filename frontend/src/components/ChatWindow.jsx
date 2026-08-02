@@ -51,7 +51,11 @@ const ChatWindow = () => {
 
   useEffect(() => {
     const unsub = onMessage((msg) => {
-      setMessages((prev) => [...prev, msg]);
+      setMessages((prev) => {
+        const exists = prev.some(m => m._id === msg._id);
+        if (exists) return prev;
+        return [...prev, msg];
+      });
       if (isAtBottomRef.current) setTimeout(() => scrollToBottom(), 50);
       else setShowNewPill(true);
     });
@@ -108,12 +112,45 @@ const ChatWindow = () => {
     if (!text) return;
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     emitTypingStop();
-    socket?.emit('message:send', { message_text: text });
+
+    const tempId = `temp-${Date.now()}-${Math.random()}`;
+    const optimisticMsg = {
+      _id: tempId,
+      user_id: user?._id,
+      sender_name: user?.username,
+      message_text: text,
+      timestamp: new Date().toISOString(),
+      status: 'sending',
+    };
+    setMessages((prev) => [...prev, optimisticMsg]);
+    if (isAtBottomRef.current) setTimeout(() => scrollToBottom(), 50);
+
+    socket?.emit('message:send', { message_text: text }, (response) => {
+      if (response?.error) {
+        setMessages((prev) => prev.map(m => m._id === tempId ? { ...m, status: 'failed' } : m));
+      } else {
+        setMessages((prev) => prev.map(m => m._id === tempId ? { ...m, _id: response._id || response.message?._id || tempId, status: 'sent' } : m));
+        setTimeout(() => {
+          setMessages((prev) => prev.map(m => m._id === (response._id || response.message?._id) ? { ...m, status: 'delivered' } : m));
+        }, 1000);
+      }
+    });
+
     inputRef.current.value = '';
   };
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(e); }
+  };
+
+  const handleDeleteMessage = async (messageId) => {
+    try {
+      await messageService.deleteMessage(messageId);
+      setMessages((prev) => prev.filter(m => m._id !== messageId));
+      socket?.emit('message:delete', { messageId });
+    } catch (err) {
+      console.error('Failed to delete message:', err);
+    }
   };
 
   const shouldShowSender = (msg, i) => i === 0 || messages[i - 1].user_id !== msg.user_id;
@@ -151,7 +188,7 @@ const ChatWindow = () => {
                   </div>
                 </div>
               )}
-              <ChatBubble message={msg} showSender={shouldShowSender(msg, i)} />
+              <ChatBubble message={msg} showSender={shouldShowSender(msg, i)} onDelete={handleDeleteMessage} />
             </div>
           );
         })}

@@ -14,6 +14,15 @@ const messageService = {
     const response = await api.get('/messages', { params });
     return response.data;
   },
+
+  deleteMessage: async (id) => {
+    if (useMocks) {
+      await new Promise((r) => setTimeout(r, 100));
+      return { deletedId: id };
+    }
+    const response = await api.delete(`/messages/${id}`);
+    return response.data;
+  },
 };
 
 export default messageService;

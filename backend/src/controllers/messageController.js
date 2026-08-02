@@ -24,3 +24,22 @@ export const getMessages = async (req, res, next) => {
     next(error);
   }
 };
+
+export const deleteMessage = async (req, res, next) => {
+  try {
+    const message = await Message.findById(req.params.id);
+    if (!message) {
+      return res.status(404).json({ error: 'Message not found' });
+    }
+
+    if (message.user_id.toString() !== req.user.userId) {
+      return res.status(403).json({ error: 'You can only delete your own messages' });
+    }
+
+    await Message.findByIdAndDelete(req.params.id);
+
+    res.json({ message: 'Message deleted successfully', deletedId: req.params.id });
+  } catch (error) {
+    next(error);
+  }
+};

@@ -77,6 +77,31 @@ export const updateMe = async (req, res, next) => {
   }
 };
 
+export const deleteMe = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (user.profile_picture) {
+      try {
+        await r2Client.send(new DeleteObjectCommand({
+          Bucket: process.env.R2_BUCKET_NAME,
+          Key: user.profile_picture,
+        }));
+      } catch (r2Error) {
+        console.error('R2 delete error:', r2Error);
+      }
+    }
+
+    await User.findByIdAndDelete(req.user.userId);
+    res.json({ message: 'Account deleted' });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const deleteProfilePicture = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.userId);

@@ -51,8 +51,17 @@ const ChatWindow = () => {
   useEffect(() => {
     const unsub = onMessage((msg) => {
       setMessages((prev) => {
-        const exists = prev.some(m => m._id === msg._id);
-        if (exists) return prev;
+        if (prev.some(m => m._id === msg._id)) return prev;
+        const tempIdx = prev.findIndex(m =>
+          m._id?.startsWith?.('temp-') &&
+          m.user_id === msg.user_id &&
+          m.message_text === msg.message_text
+        );
+        if (tempIdx !== -1) {
+          const updated = [...prev];
+          updated[tempIdx] = { ...msg, status: 'delivered' };
+          return updated;
+        }
         return [...prev, msg];
       });
       if (isAtBottomRef.current) setTimeout(() => scrollToBottom(), 50);

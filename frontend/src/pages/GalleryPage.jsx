@@ -64,9 +64,10 @@ const GalleryPage = () => {
 
     const promises = pendingFiles.map((fileObj, i) => {
       return new Promise(async (resolve) => {
+        let r2Result = null;
         try {
           const mediaKind = fileObj.isVideo ? 'gallery-video' : 'gallery-image';
-          const result = await uploadFile({
+          r2Result = await uploadFile({
             file: fileObj.file,
             mediaKind,
             onProgress: (p) => {
@@ -77,9 +78,9 @@ const GalleryPage = () => {
           });
           await mediaService.createGalleryItem({
             media_type: fileObj.isVideo ? 'video' : 'image',
-            file_key: result.fileKey,
-            thumbnail_key: result.thumbnailKey,
-            file_size_bytes: result.fileSizeBytes,
+            file_key: r2Result.fileKey,
+            thumbnail_key: r2Result.thumbnailKey,
+            file_size_bytes: r2Result.fileSizeBytes,
           });
           setUploadItems((prev) => prev.map((item, idx) =>
             idx === i ? { ...item, status: 'done', progress: 100 } : item
@@ -87,6 +88,9 @@ const GalleryPage = () => {
           resolve();
         } catch (err) {
           console.error(err);
+          if (r2Result?.fileKey) {
+            try { await mediaService.cleanupR2(r2Result.fileKey, r2Result.thumbnailKey); } catch {}
+          }
           setUploadItems((prev) => prev.map((item, idx) =>
             idx === i ? { ...item, status: 'error' } : item
           ));

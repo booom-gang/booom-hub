@@ -71,6 +71,12 @@ const mediaService = {
     const response = await api.delete('/users/me/profile-picture');
     return response.data;
   },
+
+  cleanupR2: async (fileKey, thumbnailKey) => {
+    if (useMocks) return { message: 'Cleanup complete' };
+    const response = await api.post('/media/cleanup-r2', { file_key: fileKey, thumbnail_key: thumbnailKey });
+    return response.data;
+  },
 };
 
 export default mediaService;

@@ -12,6 +12,11 @@ import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.*
 import com.booom.navigation.Screen
+import com.booom.ui.home.HomeScreen
+import com.booom.ui.gallery.GalleryScreen
+import com.booom.ui.chat.ChatScreen
+import com.booom.ui.calendar.CalendarScreen
+import com.booom.ui.settings.SettingsScreen
 
 @Composable
 fun MainScreen() {
@@ -53,11 +58,11 @@ fun MainScreen() {
             startDestination = Screen.Home.route,
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable(Screen.Home.route) { Text("Home Screen") } // Placeholder
-            composable(Screen.Gallery.route) { Text("Gallery Screen") } // Placeholder
-            composable(Screen.Chat.route) { Text("Chat Screen") } // Placeholder
-            composable(Screen.Calendar.route) { Text("Calendar Screen") } // Placeholder
-            composable(Screen.Settings.route) { Text("Settings Screen") } // Placeholder
+            composable(Screen.Home.route) { HomeScreen() }
+            composable(Screen.Gallery.route) { GalleryScreen() }
+            composable(Screen.Chat.route) { ChatScreen() }
+            composable(Screen.Calendar.route) { CalendarScreen() }
+            composable(Screen.Settings.route) { SettingsScreen() }
         }
     }
 }

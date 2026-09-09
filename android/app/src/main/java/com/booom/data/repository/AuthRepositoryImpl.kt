@@ -20,7 +20,7 @@ class AuthRepositoryImpl @Inject constructor(
     
     override val isAuthenticated: Flow<Boolean> = sessionManager.token.map { it != null }
 
-    override fun login(masterPassword: String, username: String): Result<User> {
+    override suspend fun login(masterPassword: String, username: String): Result<User> {
         return try {
             val response = authApi.login(LoginRequest(masterPassword, username))
             sessionManager.saveSession(response.token, response.user)
@@ -30,7 +30,7 @@ class AuthRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun logout() {
+    override suspend fun logout() {
         sessionManager.clearSession()
     }
 }

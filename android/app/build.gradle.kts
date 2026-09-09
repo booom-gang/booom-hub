@@ -3,6 +3,8 @@ plugins {
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.hilt)
+    kotlin("kapt")
 }
 
 android {
@@ -20,6 +22,10 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:5000/api/\"")
+        buildConfigField("String", "SOCKET_BASE_URL", "\"http://10.0.2.2:5000\"")
+        buildConfigField("String", "PUBLIC_MEDIA_BASE_URL", "\"http://10.0.2.2:5000/public/\"") // Default or placeholder
     }
 
     buildTypes {
@@ -66,6 +72,10 @@ dependencies {
     implementation(libs.socket.io.client)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.kotlinx.serialization.json)
+    
+    implementation(libs.hilt.android)
+    kapt(libs.hilt.compiler)
+    implementation(libs.androidx.hilt.navigation.compose)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

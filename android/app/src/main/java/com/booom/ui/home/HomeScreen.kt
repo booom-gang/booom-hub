@@ -75,7 +75,7 @@ fun MemberCard(user: User) {
             verticalAlignment = Alignment.CenterHorizontally
         ) {
             AsyncImage(
-                model = user.profile_picture, // Need to handle URL properly
+                model = com.booom.util.UrlUtils.getProxiedUrl(user.profile_picture),
                 contentDescription = null,
                 modifier = Modifier
                     .size(64.dp)

@@ -19,4 +19,24 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindUserRepository(impl: UserRepositoryImpl): UserRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindChatSocketRepository(impl: com.booom.data.remote.socket.ChatSocketRepositoryImpl): ChatSocketRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindMessageRepository(impl: MessageRepositoryImpl): MessageRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindGalleryRepository(impl: GalleryRepositoryImpl): GalleryRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindMediaUploadRepository(impl: MediaUploadRepositoryImpl): MediaUploadRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindEventRepository(impl: EventRepositoryImpl): EventRepository
 }

@@ -6,3 +6,8 @@ dist/
 .DS_Store
 Thumbs.db
 .vite/
+
+# Android/Gradle local files
+.gradle/
+local.properties
+**/build/

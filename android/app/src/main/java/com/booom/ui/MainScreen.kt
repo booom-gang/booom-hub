@@ -23,8 +23,8 @@ fun MainScreen() {
     val navController = rememberNavController()
     val items = listOf(
         BottomNavItem("Home", Screen.Home.route, Icons.Default.Home),
-        BottomNavItem("Gallery", Screen.Gallery.route, Icons.Default.Image),
-        BottomNavItem("Chat", Screen.Chat.route, Icons.Default.Chat),
+        BottomNavItem("Gallery", Screen.Gallery.route, Icons.Default.Place),
+        BottomNavItem("Chat", Screen.Chat.route, Icons.Default.List),
         BottomNavItem("Calendar", Screen.Calendar.route, Icons.Default.DateRange),
         BottomNavItem("Settings", Screen.Settings.route, Icons.Default.Settings)
     )

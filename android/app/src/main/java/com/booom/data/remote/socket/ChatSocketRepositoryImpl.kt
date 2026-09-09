@@ -7,6 +7,7 @@ import com.booom.domain.repository.ChatSocketRepository
 import com.booom.domain.repository.ConnectionState
 import io.socket.client.IO
 import io.socket.client.Socket
+import io.socket.emitter.Emitter
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,7 +35,7 @@ class ChatSocketRepositoryImpl @Inject constructor(
     override val onlineUserIds = _onlineUserIds.asStateFlow()
 
     override val messages: Flow<Message> = callbackFlow {
-        val messageHandler = { args: Array<Any> ->
+        val messageHandler = Emitter.Listener { args ->
             val data = args[0] as JSONObject
             try {
                 val message = json.decodeFromString<Message>(data.toString())

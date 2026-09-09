@@ -1,6 +1,7 @@
 package com.booom.data.remote.api
 
 import com.booom.domain.model.User
+import kotlinx.serialization.Serializable
 import retrofit2.http.*
 
 @Serializable

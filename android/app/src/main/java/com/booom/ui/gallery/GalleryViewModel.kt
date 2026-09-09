@@ -6,14 +6,23 @@ import com.booom.domain.model.Media
 import com.booom.domain.repository.GalleryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class GalleryViewModel @Inject constructor(
-    private val galleryRepository: GalleryRepository
+    private val galleryRepository: GalleryRepository,
+    private val authRepository: com.booom.domain.repository.AuthRepository
 ) : ViewModel() {
+
+    val currentUser = authRepository.currentUser.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = null
+    )
 
     private val _state = MutableStateFlow<GalleryUiState>(GalleryUiState.Loading)
     val state = _state.asStateFlow()

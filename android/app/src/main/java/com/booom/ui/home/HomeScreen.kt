@@ -21,7 +21,7 @@ import com.booom.domain.model.User
 fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel()
 ) {
-    val currentUser by viewModel.currentUser.collectAsState()
+    val currentUser by viewModel.currentUser.collectAsState(initial = null)
     val usersState by viewModel.usersState.collectAsState()
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
@@ -72,7 +72,7 @@ fun MemberCard(user: User) {
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterHorizontally
+            verticalAlignment = Alignment.CenterVertically
         ) {
             AsyncImage(
                 model = com.booom.util.UrlUtils.getProxiedUrl(user.profile_picture),

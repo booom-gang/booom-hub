@@ -15,8 +15,15 @@ import javax.inject.Inject
 class ChatViewModel @Inject constructor(
     private val messageRepository: MessageRepository,
     private val socketRepository: ChatSocketRepository,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    private val authRepository: com.booom.domain.repository.AuthRepository
 ) : ViewModel() {
+
+    val currentUser = authRepository.currentUser.stateIn(
+        scope = viewModelScope,
+        started = kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000),
+        initialValue = null
+    )
 
     private val _messages = MutableStateFlow<List<Message>>(emptyList())
     val messages = _messages.asStateFlow()

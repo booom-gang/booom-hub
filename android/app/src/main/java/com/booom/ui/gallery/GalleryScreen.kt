@@ -1,6 +1,7 @@
 package com.booom.ui.gallery
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -27,22 +28,24 @@ fun GalleryScreen(
     val state by viewModel.state.collectAsState()
     val currentUser by viewModel.currentUser.collectAsState(initial = null)
 
-    Scaffold(
-        floatingActionButton = {
-            FloatingActionButton(onClick = { /* TODO: Implement upload */ }) {
-                Icon(androidx.compose.material.icons.Icons.Default.Add, contentDescription = "Upload")
-            }
-        }
-    ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+    Column(modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = 20.dp, bottom = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Text(
-                text = "Gallery",
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.padding(16.dp),
+                text = "Gallery  🖼",
+                style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.primary
             )
+            Button(onClick = { /* Upload flow can be connected to the existing upload service. */ }, shape = RoundedCornerShape(24.dp), contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)) {
+                Icon(androidx.compose.material.icons.Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(5.dp))
+                Text("Upload", style = MaterialTheme.typography.labelLarge)
+            }
 
-            when (val s = state) {
+        when (val s = state) {
                 is GalleryUiState.Loading -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
@@ -60,10 +63,10 @@ fun GalleryScreen(
                 }
                 is GalleryUiState.Success -> {
                     LazyVerticalGrid(
-                        columns = GridCells.Adaptive(minSize = 150.dp),
-                        contentPadding = PaddingValues(8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        columns = GridCells.Fixed(2),
+                        contentPadding = PaddingValues(bottom = 20.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         items(s.items) { item ->
                             GalleryItem(
@@ -86,11 +89,13 @@ fun GalleryItem(
     onDelete: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth().aspectRatio(0.8f),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        modifier = Modifier.fillMaxWidth().aspectRatio(1f),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column {
-            Box(modifier = Modifier.weight(1f)) {
+            Box(modifier = Modifier.fillMaxSize()) {
                 AsyncImage(
                     model = item.proxy_url ?: UrlUtils.getProxiedUrl(item.file_key),
                     contentDescription = null,
@@ -110,12 +115,7 @@ fun GalleryItem(
                     }
                 }
             }
-            Text(
-                text = item.user_id?.username ?: "Unknown",
-                style = MaterialTheme.typography.labelSmall,
-                modifier = Modifier.padding(4.dp),
-                maxLines = 1
-            )
+            Text(text = item.user_id?.username ?: "Unknown", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(4.dp), maxLines = 1)
         }
     }
 }

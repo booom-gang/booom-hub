@@ -1,6 +1,7 @@
 package com.booom.ui.chat
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -32,24 +33,14 @@ fun ChatScreen(
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        Surface(
-            color = if (connectionState == com.booom.domain.repository.ConnectionState.CONNECTED) 
-                MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.errorContainer
-        ) {
-            Text(
-                text = connectionState.name,
-                modifier = Modifier.fillMaxWidth().padding(4.dp),
-                style = MaterialTheme.typography.labelSmall,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-            )
-        }
+    Column(modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp)) {
+        Text("Chat 💬", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 20.dp, bottom = 12.dp))
 
         LazyColumn(
             state = listState,
             modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(vertical = 16.dp)
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+            contentPadding = PaddingValues(vertical = 8.dp)
         ) {
             items(messages) { message ->
                 MessageBubble(
@@ -65,12 +56,13 @@ fun ChatScreen(
             Text(
                 text = "${typingList.joinToString(", ")} is typing...",
                 style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
         Row(
-            modifier = Modifier.fillMaxWidth().padding(8.dp).navigationBarsPadding().imePadding(),
+            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp).navigationBarsPadding().imePadding(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             TextField(
@@ -80,7 +72,14 @@ fun ChatScreen(
                     if (it.isNotEmpty()) viewModel.startTyping() else viewModel.stopTyping()
                 },
                 modifier = Modifier.weight(1f),
-                placeholder = { Text("Message") },
+                placeholder = { Text("write something...") },
+                shape = RoundedCornerShape(22.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                    focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
+                ),
                 maxLines = 4
             )
             IconButton(onClick = {
@@ -101,12 +100,14 @@ fun MessageBubble(
     onDelete: () -> Unit
 ) {
     val alignment = if (isOwner) Alignment.End else Alignment.Start
-    val containerColor = if (isOwner) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.secondaryContainer
+    val containerColor = if (isOwner) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface
 
     Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = alignment) {
         Card(
-            modifier = Modifier.fillMaxWidth(0.8f),
-            colors = CardDefaults.cardColors(containerColor = containerColor)
+            modifier = Modifier.fillMaxWidth(0.82f),
+            shape = RoundedCornerShape(18.dp),
+            colors = CardDefaults.cardColors(containerColor = containerColor),
+            border = if (isOwner) null else androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
         ) {
             Column(modifier = Modifier.padding(8.dp)) {
                 Row(
@@ -114,18 +115,19 @@ fun MessageBubble(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(text = message.sender_name, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                    Text(text = message.sender_name, style = MaterialTheme.typography.labelLarge, color = if (isOwner) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary)
                     if (isOwner) {
                         IconButton(onClick = onDelete, modifier = Modifier.size(24.dp)) {
                             Icon(Icons.Default.Delete, contentDescription = "Delete", modifier = Modifier.size(16.dp))
                         }
                     }
                 }
-                Text(text = message.message_text)
+                Text(text = message.message_text, color = if (isOwner) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface)
                 Text(
                     text = message.timestamp, 
                     style = MaterialTheme.typography.labelSmall, 
-                    modifier = Modifier.align(Alignment.End)
+                    modifier = Modifier.align(Alignment.End),
+                    color = if (isOwner) MaterialTheme.colorScheme.onPrimary.copy(alpha = .7f) else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }

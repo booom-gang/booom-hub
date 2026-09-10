@@ -23,9 +23,9 @@ android {
             useSupportLibrary = true
         }
 
-        buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:5000/api/\"")
-        buildConfigField("String", "SOCKET_BASE_URL", "\"http://10.0.2.2:5000\"")
-        buildConfigField("String", "PUBLIC_MEDIA_BASE_URL", "\"http://10.0.2.2:5000/public/\"") // Default or placeholder
+        buildConfigField("String", "API_BASE_URL", "\"https://booom-hub.onrender.com/api/\"")
+        buildConfigField("String", "SOCKET_BASE_URL", "\"https://booom-hub.onrender.com\"")
+        buildConfigField("String", "PUBLIC_MEDIA_BASE_URL", "\"https://booom-hub.onrender.com/public/\"")
     }
 
     buildTypes {

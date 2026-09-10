@@ -40,10 +40,10 @@ Make backend URLs configurable through `BuildConfig` or a simple environment con
 
 Required values:
 
-- `API_BASE_URL`: REST base URL including `/api`, for example `http://10.0.2.2:5000/api` on the Android emulator
-- `SOCKET_BASE_URL`: Socket.IO origin without `/api`, for example `http://10.0.2.2:5000`
+- `API_BASE_URL`: `https://booom-hub.onrender.com/api/`
+- `SOCKET_BASE_URL`: `https://booom-hub.onrender.com`
 
-For a physical device, use the development machine's LAN IP rather than `localhost`. For production, use the deployed backend URL from the project environment. The repository does not currently document the production Render URL, so leave this configurable.
+Use the deployed Render backend for the app. Do not use emulator addresses, localhost, LAN IPs, or local development ports in production builds.
 
 If local HTTP is used during development, configure cleartext traffic only for the development build. Do not weaken TLS requirements in release builds.
 
